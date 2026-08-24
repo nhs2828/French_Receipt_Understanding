@@ -1,0 +1,17 @@
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/
+
+transformers>=4.45
+datasets>=2.20
+evaluate
+seqeval
+accelerate
+pyyaml
+torch
+torchvision
+pillow
+sentencepiece
+paddleocr>=2.7
+paddlepaddle==3.2.0
+#paddlepaddle-gpu
+# need this for layoutv2, remove CC CXX, ARCHFLAGS if not macbook
+# CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install --no-build-isolation 'git+https://github.com/facebookresearch/detectron2.git@b4a4a3bd136852dae5fb1de37978dee412653e31'

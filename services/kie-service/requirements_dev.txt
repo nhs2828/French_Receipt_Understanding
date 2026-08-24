@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+loguru
+pydantic_settings
+python-multipart
+transformers==5.15.1
+accelerate==1.14.0
+pyyaml
+torch==2.13.0
+torchvision==0.28.0
+pillow==12.3.0
+sentencepiece==0.2.2
+-e ../../libs/vision_client
+# need this for layoutv2, remove CC CXX, ARCHFLAGS if not macbook
+# CC=clang CXX=clang++ ARCHFLAGS="-arch x86_64" python -m pip install --no-build-isolation 'git+https://github.com/facebookresearch/detectron2.git@b4a4a3bd136852dae5fb1de37978dee412653e31'

@@ -1,0 +1,55 @@
+# =============================================================
+# Config cho dataset SROIE (tiếng Anh)
+# Muốn train dataset khác: copy file này, đổi root_dir + entity_fields
+# (yêu cầu dataset mới có cùng cấu trúc thư mục img/box/entities như SROIE)
+# =============================================================
+
+dataset:
+  # root_dir: ./data/FR_SROIE
+  # ocr_lang: fr            # ngôn ngữ cho PaddleOCR lúc predict (en / vi / ...)
+
+  # Mapping: field JSON trong entities/*.txt  ->  tên nhãn BIO sẽ dùng để train
+  # Đổi field/tên nhãn ở đây không cần sửa bất kỳ file .py nào
+  entity_fields:
+    - json_key: merchant
+      label: MERCHANT
+    - json_key: date
+      label: DATE
+    - json_key: address
+      label: ADDRESS
+    - json_key: total
+      label: TOTAL
+    - json_key: zipcode
+      label: ZIPCODE
+
+model:
+  # architecture: layoutlmv3 -> tokenizer RoBERTa, phù hợp tiếng Anh (SROIE)
+  # architecture: layoutxlm  -> tokenizer XLM-R, phù hợp đa ngôn ngữ/tiếng Việt
+  architecture: layoutxlm
+  base_checkpoint: microsoft/layoutxlm-base
+  max_length: 512
+
+# training:
+#   output_dir: ./outputs/sroie_run1
+
+#   batch_size: 2
+#   eval_batch_size: 2
+#   grad_accum_steps: 8          # effective batch size = batch_size * grad_accum_steps
+
+#   learning_rate: 1e-5
+#   num_epochs: 20
+#   warmup_ratio: 0.1
+#   weight_decay: 0.01
+#   max_grad_norm: 1.0
+
+#   fp16: true
+#   logging_steps: 10
+#   save_total_limit: 2          # chỉ giữ lại N checkpoint gần nhất, tránh đầy ổ đĩa
+#   early_stopping_patience: 5
+
+#   # Bật true nếu thấy F1 = 0 kéo dài nhiều epoch do mất cân bằng nhãn nặng
+#   # (dataset nhiều field, entity chiếm tỷ lệ token rất nhỏ so với "O")
+#   use_class_weights: true
+
+#   dataloader_num_workers: 2
+#   seed: 42

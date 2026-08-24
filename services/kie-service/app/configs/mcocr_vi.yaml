@@ -1,0 +1,55 @@
+# =============================================================
+# Config cho dataset MC-OCR (tiếng Việt - hóa đơn bán lẻ)
+# Nguồn: Mobile Captured Receipt Recognition Challenge (RIVF 2021)
+# 4 field chính thức: SELLER, SELLER ADDRESS, TIMESTAMP, TOTAL COST
+#
+# LƯU Ý: MC-OCR gốc KHÔNG có cấu trúc img/box/entities như SROIE.
+# Cần chạy scripts/convert_mcocr.py trước để convert train.csv gốc
+# sang đúng cấu trúc thư mục mà data_loader.py yêu cầu.
+# =============================================================
+
+dataset:
+  root_dir: ./data/MC-OCR-VN
+  ocr_lang: vi            # PaddleOCR cần model rec tiếng Việt, hoặc dùng VietOCR riêng
+
+  entity_fields:
+    - json_key: seller
+      label: SELLER
+    - json_key: address
+      label: ADDRESS
+    - json_key: timestamp
+      label: DATE
+    - json_key: total_cost
+      label: TOTAL
+
+model:
+  # Dùng layoutxlm cho tiếng Việt -- tokenizer XLM-R xử lý dấu tốt hơn RoBERTa.
+  # Đổi ngược lại "layoutlmv3" nếu chỉ cần demo nhanh, không cần chất lượng tối ưu.
+  architecture: layoutxlm
+  base_checkpoint: microsoft/layoutxlm-base
+  max_length: 512
+
+training:
+  output_dir: ./outputs/mcocr_vi_run1
+
+  batch_size: 2
+  eval_batch_size: 2
+  grad_accum_steps: 8
+
+  learning_rate: 2e-5
+  num_epochs: 50
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+
+  fp16: true
+  logging_steps: 10
+  save_total_limit: 2
+  early_stopping_patience: 5
+
+  # MC-OCR chỉ có 4 field nhưng receipt tiếng Việt thường dài, nhiều dòng sản phẩm
+  # -> tỷ lệ token "O" so với entity có thể cao hơn SROIE, cân nhắc bật nếu F1 thấp kéo dài
+  use_class_weights: false
+
+  dataloader_num_workers: 2
+  seed: 42

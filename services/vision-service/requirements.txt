@@ -1,0 +1,15 @@
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+fastapi
+uvicorn
+loguru
+python-multipart
+ultralytics
+opencv-python
+pydantic
+pydantic-settings
+paddlepaddle==3.2.0
+paddleocr
+onnx
+onnxruntime
