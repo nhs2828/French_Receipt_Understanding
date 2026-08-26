@@ -19,3 +19,5 @@ training/KIE/LayoutLM/data/
 training/KIE/LayoutLM/outputs/
 # the PaddleOCR repos
 training/PaddleOCR/
+# logs
+*.log

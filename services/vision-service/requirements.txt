@@ -2,7 +2,9 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 fastapi
+slowapi
 uvicorn
+gunicorn
 loguru
 python-multipart
 ultralytics
@@ -13,3 +15,5 @@ paddlepaddle==3.2.0
 paddleocr
 onnx
 onnxruntime
+prometheus-client
+prometheus-fastapi-instrumentator

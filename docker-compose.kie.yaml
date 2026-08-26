@@ -1,25 +1,27 @@
 services:
   vision-service:
-    platform: linux/amd64   # PaddlePaddle segfaults on linux/arm64 — force x86 + Rosetta emulation
+    #platform: linux/amd64   # PaddlePaddle segfaults on linux/arm64 — force x86 + Rosetta emulation
     build:
       context: ./services/vision-service
       dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
+      # platforms:
+      #   - linux/amd64
     ports:
       - "8000:8000"
     # environment:
     #   - MODEL_DIR=/app/models
     volumes:
       # bind-mount local weights for now — replace with init-container + S3
-      # pull once this moves to k8s (see design doc decisions log)
+      # pull once this moves to k8s
       - ./services/vision-service/models:/app/models:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/docs').raise_for_status()"]
-      interval: 10s
+      interval: 20s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 40s
+    networks:
+      - ocr-network
 
   kie-service:
     build:
@@ -29,9 +31,88 @@ services:
       - "8001:8000"
     environment:
       # - MODEL_DIR=/app/models
-      - VISION_SERVICE_URL=http://vision-service:8000/process
+      - KIE_VISION_SERVICE_URL=http://vision-service:8000/api/v1/extract
     volumes:
       - ./services/kie-service/models:/app/models:ro
+    networks:
+      - ocr-network
     depends_on:
       vision-service:
         condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    networks:
+      - ocr-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_AUTH_ANONYMOUS_ENABLED=true       # convenient for local testing only, remove for real deployments
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    restart: unless-stopped
+    networks:
+      - ocr-network
+    depends_on:
+      - prometheus
+
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - ocr-network
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - ocr-network
+    depends_on:
+      - loki
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    ports:
+      - "8080:8080"
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+    networks:
+      - ocr-network
+    # cAdvisor container mounts don't work on Docker Desktop for Mac (no real /sys, /var/lib/docker) —
+    # On macOS, container CPU/mem panels will be empty locally
+
+networks:
+  ocr-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

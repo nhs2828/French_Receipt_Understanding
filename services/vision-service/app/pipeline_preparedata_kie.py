@@ -7,22 +7,23 @@ from loguru import logger
 from tqdm import tqdm
 import cv2
 
-from app.segmentation import (
-    load_model as load_seg_model,
-    run_segmentation
-)
-from app.preprocessing import (
-    apply_black_background,
-    rotate_and_crop
-)
-from app.text_extraction import (
-    load_model as load_text_ext_model,
-    run_text_extraction,
-    process_text_extraction_results
-)
+# from app.segmentation import (
+#     load_model as load_seg_model,
+#     run_segmentation
+# )
+# from app.preprocessing import (
+#     apply_black_background,
+#     rotate_and_crop
+# )
+# from app.text_extraction import (
+#     load_model as load_text_ext_model,
+#     run_text_extraction,
+#     process_text_extraction_results
+# )
+from app.services import SegmentationService, TextExtractionService, ProcessingService
 from app.config import (
     segmentation_params, 
-    paddle_ocr_params
+    # paddle_ocr_params
 )
 from app.utils import ndarray_to_jpg, draw_polys
 
@@ -105,33 +106,38 @@ if __name__ == '__main__':
 
     logger.info("Get models")
     logger.info("Get segmentation model")
-    seg_model = load_seg_model(
-        model_path=ROOT_DIR / "models/segmentation/last.onnx"
-    )
+    # seg_model = load_seg_model(
+    #     model_path=ROOT_DIR / "models/segmentation/last.onnx"
+    # )
+    seg_model = SegmentationService()
+    seg_model.load()
+
     logger.info("Get text-extraction model")
-    params_text_ext = paddle_ocr_params.model_dump()
-    params_text_ext_tuple = tuple(sorted(params_text_ext.items()))
-    text_ext_model = load_text_ext_model(
-        det_model_path=Path(ROOT_DIR / f"models/detection/{params_text_ext['text_detection_model_name']}"),
-        rec_model_path=Path(ROOT_DIR / f"models/recognition/{params_text_ext['text_recognition_model_name']}"),
-        params=params_text_ext_tuple
-    )
+    # params_text_ext = paddle_ocr_params.model_dump()
+    # params_text_ext_tuple = tuple(sorted(params_text_ext.items()))
+    # text_ext_model = load_text_ext_model(
+    #     det_model_path=Path(ROOT_DIR / f"models/detection/{params_text_ext['text_detection_model_name']}"),
+    #     rec_model_path=Path(ROOT_DIR / f"models/recognition/{params_text_ext['text_recognition_model_name']}"),
+    #     params=params_text_ext_tuple
+    # )
+    text_ext_model = TextExtractionService()
+    text_ext_model.load()
 
     for img in tqdm(input_list):
         file_path = Path(img)
-        data = run_segmentation(seg_model, img, params=segmentation_params, debug=False)
+        data = seg_model.run_(img, params=segmentation_params, debug=False)
         orig_img = data.original_image
         for i, poly in enumerate(data.mask_polygons):
-            img_with_black_bg = apply_black_background(orig_img, poly)
+            img_with_black_bg = ProcessingService.apply_black_background(orig_img, poly)
             #cropped_result = get_rotate_crop_image(img_with_black_bg, poly)
-            cropped_result = rotate_and_crop(img_with_black_bg, poly)
+            cropped_result = ProcessingService.rotate_and_crop(img_with_black_bg, poly)
             #ndarray_to_jpg(img_np=cropped_result.image, img_path=f"{DICT_SUB_DIR_PATH['image']}/{file_path.stem}_{i}{file_path.suffix}")
-            cropped_result.image = add_white_padding(cropped_result.image, padding_px=70)
-            result = run_text_extraction(
-                model_wrapper=text_ext_model, 
+            cropped_result.image = ProcessingService.add_white_padding(cropped_result.image, padding_px=70)
+            result = text_ext_model.run(
+                # model_wrapper=text_ext_model, 
                 image=cropped_result.image)
             
-            words, boxes = process_text_extraction_results(
+            words, boxes = ProcessingService.process_text_extraction_results(
                 img=cropped_result.image, 
                 result=result, 
                 data_prep=True,
