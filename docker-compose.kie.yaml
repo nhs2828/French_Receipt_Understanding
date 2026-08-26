@@ -91,11 +91,19 @@ services:
       - loki
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    container_name: cadvisor
+    #image: gcr.io/cadvisor/cadvisor:v0.49.1
     ports:
       - "8080:8080"
     privileged: true
+    command:
+      - "--housekeeping_interval=15s"
+      - "--docker_only=true"
+      - "--store_container_labels=false"
+      - "--disable_metrics=disk" # workaround for #3860
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro

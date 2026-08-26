@@ -28,8 +28,10 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(PipelineError)
     async def pipeline_error_handler(request: Request, exc: PipelineError):
-        logger.warning(f"PipelineError: {exc.error_code} - {exc.message}")
-        PIPELINE_ERRORS.labels(error_code=exc.error_code, stage=exc.stage or "unknown").inc()
+        error_code = getattr(exc, "error_code", exc.__class__.__name__)
+        stage = getattr(exc, "stage", "unknown")
+        logger.warning(f"PipelineError: {error_code} - {exc.message}")
+        PIPELINE_ERRORS.labels(error_code=error_code, stage=stage).inc()
         return JSONResponse(
             status_code=exc.status_code,
             content=_error_body(exc.error_code, exc.message, exc.stage),
