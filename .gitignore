@@ -9,9 +9,9 @@ dist/
 # Model
 local_models/*
 .onnx
-services/vision-service/models/detection/
-services/vision-service/models/segmentation/
-services/vision-service/models/recognition/
+# services/vision-service/models/detection/
+# services/vision-service/models/segmentation/
+# services/vision-service/models/recognition/
 services/vision-service/output_data_prep/
 services/kie-service/models/
 # training data
@@ -21,3 +21,7 @@ training/KIE/LayoutLM/outputs/
 training/PaddleOCR/
 # logs
 *.log
+*.log*
+# unsure folder
+libs/observability/
+libs/pipeline_middleware/
