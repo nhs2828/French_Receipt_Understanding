@@ -10,6 +10,13 @@ services:
       - "8000:8000"
     environment:
       - PADDLEOCR_DEVICE=gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     volumes:
       # bind-mount local weights for now — replace with init-container + S3
       # pull once this moves to k8s
@@ -32,6 +39,13 @@ services:
     environment:
       # - MODEL_DIR=/app/models
       - KIE_VISION_SERVICE_URL=http://vision-service:8000/api/v1/extract
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     volumes:
       - ./services/kie-service/models:/app/models:ro
     networks:
