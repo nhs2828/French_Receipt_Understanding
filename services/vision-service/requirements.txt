@@ -1,19 +1,28 @@
---extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/
---extra-index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu126/
+--extra-index-url https://download.pytorch.org/whl/cu126
 
+# Core Frameworks (Explicitly pinned to CUDA 12.x wheels)
+torch
+torchvision
+paddlepaddle-gpu==3.2.1
+paddleocr
+
+# Inference Engine & Computer Vision
+onnx==1.16.1
+onnxruntime-gpu==1.18.0
+ultralytics
+opencv-python
+
+# FastAPI API Microservice
 fastapi
 slowapi
 uvicorn
 gunicorn
 loguru
 python-multipart
-ultralytics
-opencv-python
 pydantic
 pydantic-settings
-paddlepaddle==3.2.0
-paddleocr
-onnx
-onnxruntime
+
+# Monitoring & Metrics
 prometheus-client
 prometheus-fastapi-instrumentator

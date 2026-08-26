@@ -16,7 +16,7 @@ class SegmentationParams(BaseSettings):
     iou: float = Field(0.45, ge=0.0, le=1.0)
     end2end: bool = False
     rect: bool = False
-    device: str = "cpu"
+    device: str = "cpu" # cpu
 
     class Config:
         env_prefix = "SEG_"  # reads SEG_CONF, SEG_IOU, SEG_END2END, SEG_RECT
