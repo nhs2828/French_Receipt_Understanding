@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vision-service
+  namespace: receipt-understanding
+  labels:
+    app: vision-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vision-service
+  template:
+    metadata:
+      labels:
+        app: vision-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # PaddlePaddle needs amd64 — same constraint as `platform: linux/amd64` in docker-compose.
+      # Remove this nodeSelector once every node in your cluster is guaranteed amd64.
+      # nodeSelector:
+      #   kubernetes.io/arch: amd64
+      containers:
+        - name: vision-service
+          image: nhs2828/vision-service:v1.0   # see DEPLOY.md for build/push steps
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: vision-service-config
+          volumeMounts:
+            - name: models
+              mountPath: /app/models
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6   # models take a while to load — don't flap the pod during startup
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/live
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"   # bump this if the pod OOMKills — PaddleOCR + YOLO-seg are memory-hungry
+      volumes:
+        - name: models
+          hostPath:
+            # Populated by `minikube mount ./services/vision-service/models:/mnt/host-models/vision`
+            # running in a separate terminal — see DEPLOY.md. Swap for an initContainer + S3 later.
+            path: /mnt/host-models/vision
+            type: Directory

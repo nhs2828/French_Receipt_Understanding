@@ -1,0 +1,15 @@
+# Minimal demo overrides for the grafana/loki-stack chart (bundles Loki + Promtail).
+
+loki:
+  persistence:
+    enabled: false   # demo only — logs reset on pod restart
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+promtail:
+  # Default config already tails every pod's stdout via the Kubernetes API — no relabeling
+  # needed here, unlike the docker-compose Promtail config which had to strip a leading "/"
+  # from container names. That quirk was Docker-specific and doesn't exist in k8s.
+  enabled: true

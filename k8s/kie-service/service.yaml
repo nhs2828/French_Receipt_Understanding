@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kie-service
+  namespace: receipt-understanding
+  labels:
+    app: kie-service
+spec:
+  type: NodePort   # demo convenience — open with `minikube service kie-service -n receipt-understanding`
+  selector:
+    app: kie-service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

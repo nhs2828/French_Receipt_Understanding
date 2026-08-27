@@ -1,0 +1,32 @@
+# Minimal demo overrides for the prometheus-community/kube-prometheus-stack chart.
+# Everything not listed here uses the chart's defaults.
+
+grafana:
+  adminPassword: admin   # change if this demo is ever exposed beyond localhost
+  sidecar:
+    dashboards:
+      enabled: true       # auto-loads ConfigMaps labeled grafana_dashboard: "1" (see grafana-dashboard-configmap.yaml)
+      label: grafana_dashboard
+      searchNamespace: monitoring   # keep the dashboard ConfigMap in the same namespace as this release
+  persistence:
+    enabled: false   # demo only — dashboards/settings reset on pod restart, which is fine for Friday
+
+prometheus:
+  prometheusSpec:
+    retention: 6h   # short retention is enough for a live demo, keeps disk usage low
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+    # serviceMonitorSelectorNilUsesHelmValues defaults to true, so any ServiceMonitor
+    # labeled release: monitoring (matching this Helm release name) is auto-discovered —
+    # that's what vision-service/servicemonitor.yaml and kie-service/servicemonitor.yaml rely on.
+
+alertmanager:
+  enabled: false   # not needed for a demo — no one's getting paged on Friday
+
+nodeExporter:
+  enabled: true   # gives you real CPU/mem per node for free, unlike the docker-compose cAdvisor workaround
+
+kubeStateMetrics:
+  enabled: true

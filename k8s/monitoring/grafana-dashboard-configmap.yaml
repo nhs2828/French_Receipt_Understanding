@@ -1,0 +1,622 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ocr-pipeline-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  ocr-pipeline.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": true,
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 100,
+          "panels": [],
+          "title": "Latency & Throughput",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": true
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 1
+          },
+          "id": 1,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(ocr_pipeline_stage_duration_seconds_bucket{stage=\"total-vision\"}[5m])) by (le, job))",
+              "legendFormat": "{{job}} - vision total p95",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(ocr_pipeline_stage_duration_seconds_bucket{stage=\"total-vision\"}[5m])) by (le, job))",
+              "legendFormat": "{{job}} - vision total p50",
+              "refId": "B"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(kie_pipeline_stage_duration_seconds_bucket{stage=\"total\"}[5m])) by (le, job))",
+              "legendFormat": "{{job}} - kie total p95",
+              "refId": "C"
+            },
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(kie_pipeline_stage_duration_seconds_bucket{stage=\"total\"}[5m])) by (le, job))",
+              "legendFormat": "{{job}} - kie total p50",
+              "refId": "D"
+            }
+          ],
+          "title": "Pipeline Total Latency (p50 / p95)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": true
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 1
+          },
+          "id": 2,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(ocr_pipeline_stage_duration_seconds_bucket{stage=\"segmentation\"}[5m])) by (le, job))",
+              "legendFormat": "{{job}} - segmentation p95",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(ocr_pipeline_stage_duration_seconds_bucket{stage=\"ocr\"}[5m])) by (le, job))",
+              "legendFormat": "{{job}} - ocr p95",
+              "refId": "B"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(kie_pipeline_stage_duration_seconds_bucket{stage=\"kie\"}[5m])) by (le, job))",
+              "legendFormat": "{{job}} - kie p95",
+              "refId": "C"
+            }
+          ],
+          "title": "Latency p95 by Stage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 1,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": true
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 9
+          },
+          "id": 3,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total[5m])) by (job, handler, status) * 60",
+              "legendFormat": "{{job}} {{handler}} [{{status}}]",
+              "refId": "A"
+            }
+          ],
+          "title": "Request Throughput (req/min)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 20,
+                "spanNulls": true
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 9
+          },
+          "id": 4,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "ocr_pipeline_in_flight_requests",
+              "legendFormat": "{{job}} in-flight",
+              "refId": "A"
+            },
+            {
+              "expr": "kie_pipeline_in_flight_requests",
+              "legendFormat": "{{job}} in-flight",
+              "refId": "B"
+            }
+          ],
+          "title": "In-Flight Requests (Queue Pressure)",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 17
+          },
+          "id": 101,
+          "panels": [],
+          "title": "Errors & Pipeline Data",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 60,
+                "stacking": {
+                  "mode": "normal"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 18
+          },
+          "id": 5,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "sum"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(ocr_pipeline_errors_total[5m])) by (error_code, job)",
+              "legendFormat": "{{job}} - {{error_code}}",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(increase(kie_pipeline_errors_total[5m])) by (error_code, job)",
+              "legendFormat": "{{job}} - {{error_code}}",
+              "refId": "B"
+            }
+          ],
+          "title": "Pipeline Errors (last 5m)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "color": {
+                "mode": "scheme",
+                "scheme": "Oranges"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 18
+          },
+          "id": 6,
+          "options": {
+            "calculate": false,
+            "color": {
+              "mode": "scheme",
+              "scheme": "Oranges",
+              "exponent": 0.5
+            },
+            "yAxis": {
+              "unit": "bytes"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(ocr_input_image_size_bytes_bucket[5m])) by (le)",
+              "format": "heatmap",
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Uploaded Image Size Distribution",
+          "type": "heatmap"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 26
+          },
+          "id": 102,
+          "panels": [],
+          "title": "Resource Usage",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": true
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 27
+          },
+          "id": 7,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"receipt-understanding\", container!=\"\", container!=\"POD\"}[5m])) by (pod, container)",
+              "legendFormat": "{{pod}} - {{container}}",
+              "refId": "A"
+            }
+          ],
+          "title": "CPU Usage per Pod (cores)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": true
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 27
+          },
+          "id": 8,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "container_memory_working_set_bytes{namespace=\"receipt-understanding\", container!=\"\", container!=\"POD\"}",
+              "legendFormat": "{{pod}} - {{container}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Memory Usage per Pod",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "spanNulls": true
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 35
+          },
+          "id": 9,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "mean",
+                "max"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(ocr_receipt_instances_detected_sum[5m])) / sum(increase(ocr_receipt_instances_detected_count[5m]))",
+              "legendFormat": "avg receipts detected / request",
+              "refId": "A"
+            }
+          ],
+          "title": "Avg Receipt Instances Detected per Request",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": null
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 35
+          },
+          "id": 10,
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "area"
+          },
+          "targets": [
+            {
+              "expr": "ocr_model_loaded",
+              "legendFormat": "{{job}} - {{model_name}}",
+              "refId": "A"
+            },
+            {
+              "expr": "kie_model_loaded",
+              "legendFormat": "{{job}} - {{model_name}}",
+              "refId": "B"
+            }
+          ],
+          "title": "Model Loaded Status (1=loaded)",
+          "type": "bargauge"
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "tags": [
+        "ocr",
+        "vision-service",
+        "kie-service"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Receipt Information Extraction Pipeline Monitoring",
+      "uid": "rep-understanding-pipeline-dashboard",
+      "version": 1,
+      "weekStart": ""
+    }
