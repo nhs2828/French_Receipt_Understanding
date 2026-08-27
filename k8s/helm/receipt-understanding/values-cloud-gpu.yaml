@@ -1,7 +1,7 @@
 vision:
   deployMode: cloud
   gpu:
-    enabled: true
+    enabled: false
     count: 1
     nodeSelector: {}    # leave empty until you check `kubectl describe node <gpu-node>`
     tolerations: []     # leave empty until you confirm the GPU node is tainted
@@ -9,7 +9,7 @@ vision:
 kie:
   deployMode: cloud
   gpu:
-    enabled: true
+    enabled: false
     count: 1
     nodeSelector: {}
     tolerations: []

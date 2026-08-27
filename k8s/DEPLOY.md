@@ -22,12 +22,12 @@ docker run --rm -it --network=host alpine ash -c \
 ## Replace with Dockefile_cpu if want to run with cpu
 From the repo root:
 ```bash
-docker build -t custom_name_here/vision-service:latest \
-  -f services/vision-service/Dockerfile services/vision-service
-docker push custom_name_here/vision-service:latest
+docker build -t nhs2828/vision-service-cpu:v1.0 \
+  -f services/vision-service/Dockerfile_cpu services/vision-service
+docker push nhs2828/vision-service-cpu:latest
 
-docker build -t custom_name_here/kie-service:latest \
-  -f services/kie-service/Dockerfile .
+docker build -t nhs2828/kie-service-cpu:v1.0 \
+  -f services/kie-service/Dockerfile_cpu .
 docker push custom_name_here/kie-service:latest
 ```
 Re-run these two `build` + `push` pairs any time we change code
@@ -110,7 +110,7 @@ kubectl apply -f k8s/kie-service/servicemonitor.yaml
 helm upgrade --install receipt-understanding k8s/helm/receipt-understanding \
   -n receipt-understanding --create-namespace \
   -f k8s/helm/receipt-understanding/values.yaml \
-  -f values-cloud-gpu.yaml
+  -f k8s/helm/receipt-understanding/values-cloud-gpu.yaml
 ```
 
 Watch startup:

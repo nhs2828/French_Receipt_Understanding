@@ -56,27 +56,20 @@ def run_kie_on_all_instances(kie_service: KIEService, instances: list[ReceiptRes
     response_model=KIEResponse,
     summary="Extract information from receipt images",
     description=(
-        "Pipeline: LayoutLM (KIE)."
+        "Pipeline: YOLO segmentation -> PaddleOCR text detection and recognition -> LayoutLM (KIE)."
     ),
 )
 @limiter.limit(get_settings().RATE_LIMIT_EXTRACT)
 async def extract(
     request: Request,
     image: UploadFile,
-    request_id: str | None = Query(
-        default=None,
-        description="Pass your own ID for matching with your system. If not provided, use the auto-generated system ID",
-    ),
     vision_client: VisionClient = Depends(get_vision_client),
     kie_service: KIEService = Depends(get_kie_service)
     ) -> KIEResponse:
     settings = get_settings()
     # 1. Manage Request ID & Context
-    if request_id:
-        request_id_ctx.set(request_id)
-        request.state.request_id = request_id
-    else:
-        request_id = getattr(request.state, "request_id", None)
+
+    request_id = getattr(request.state, "request_id", None)
     executor = get_inference_executor(request)
     loop = asyncio.get_running_loop()
 
