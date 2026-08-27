@@ -11,3 +11,8 @@ data:
   S3_MODEL_PREFIX: {{ .Values.kie.s3.modelPrefix | quote }}
   AWS_REGION: {{ .Values.kie.s3.region | quote }}
 {{- end }}
+{{- if .Values.kie.gpu.enabled }}
+  KIE_DEVICE: "cuda"
+{{- else }}
+  KIE_DEVICE: "cpu"
+{{- end }}

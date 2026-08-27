@@ -13,3 +13,5 @@ promtail:
   # needed here, unlike the docker-compose Promtail config which had to strip a leading "/"
   # from container names. That quirk was Docker-specific and doesn't exist in k8s.
   enabled: true
+grafana:
+  enabled: false

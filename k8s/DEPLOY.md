@@ -123,6 +123,8 @@ kubectl get pods -n receipt-understanding -w
 ```bash
 # Get the endpoints url
 minikube service kie-service -n receipt-understanding --url
+# in nested VM
+kubectl port-forward svc/kie-service 8000:8000 -n receipt-understanding
 
 # Grafana (admin / admin, or whatever set in the values file)
 kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
@@ -137,3 +139,4 @@ kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 909
 - Pod `CrashLoopBackOff` right after start → check `kubectl logs -n receipt-understanding
   <pod>`
 - kubectl logs <pod> -n receipt-understanding to check pod logs
+- kubectl describe <pod> -n receipt-understanding to check startup

@@ -8,6 +8,11 @@ data:
   S3_BUCKET: {{ .Values.vision.s3.bucket | quote }}
   S3_MODEL_PREFIX: {{ .Values.vision.s3.modelPrefix | quote }}
   AWS_REGION: {{ .Values.vision.s3.region | quote }}
+{{- end }}
+{{- if .Values.vision.gpu.enabled }}
+  PADDLEOCR_DEVICE: "gpu"
+  SEG_DEVICE: "cuda:0"
 {{- else }}
-  PLACEHOLDER: "true"
+  PADDLEOCR_DEVICE: "cpu"
+  SEG_DEVICE: "cpu"
 {{- end }}
