@@ -1,16 +1,7 @@
---extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu126/
---extra-index-url https://download.pytorch.org/whl/cu126
-
-# Core Frameworks (Explicitly pinned to CUDA 12.x wheels)
-torch
-torchvision
-paddlepaddle-gpu==3.2.1
-paddleocr
-
 # Inference Engine & Computer Vision
-onnx==1.16.1
-onnxruntime-gpu==1.18.0
-ultralytics
+onnx==1.22.0
+onnxruntime-gpu==1.26.0 # ps: env conflict hell, i want yolo onnx gpu
+ultralytics==8.4.100
 opencv-python
 
 # FastAPI API Microservice

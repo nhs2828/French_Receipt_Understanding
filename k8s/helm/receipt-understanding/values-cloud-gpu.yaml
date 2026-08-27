@@ -1,0 +1,23 @@
+vision:
+  deployMode: cloud
+  gpu:
+    enabled: true
+    count: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: nvidia-tesla-t4
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+
+kie:
+  deployMode: cloud
+  gpu:
+    enabled: true
+    count: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: nvidia-tesla-t4
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule

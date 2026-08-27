@@ -8,8 +8,9 @@ services:
       #   - linux/amd64
     ports:
       - "8000:8000"
-    # environment:
-    #   - MODEL_DIR=/app/models
+    environment:
+      - PADDLEOCR_DEVICE=cpu
+      - SEG_DEVICE=cpu
     volumes:
       # bind-mount local weights for now — replace with init-container + S3
       # pull once this moves to k8s

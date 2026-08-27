@@ -55,7 +55,8 @@ class SegmentationService():
                 end2end=params.end2end, 
                 iou=params.iou, 
                 rect=params.rect,
-                conf=params.conf)[0]  # we only have one image
+                conf=params.conf,
+                device=params.device)[0]  # we only have one image
 
         mask_polygons = result.masks.xy  # list of polygons, one per detected receipt
         confidences = result.boxes.conf  # list of confidence scores, one per detected receipt

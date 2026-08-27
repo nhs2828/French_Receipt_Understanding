@@ -107,9 +107,10 @@ kubectl apply -f k8s/kie-service/servicemonitor.yaml
 ```
 ### With Helm
 ```bash
-helm install receipt-understanding k8s/helm/receipt-understanding \
-  --namespace receipt-understanding \
-  --create-namespace
+helm upgrade --install receipt-understanding k8s/helm/receipt-understanding \
+  -n receipt-understanding --create-namespace \
+  -f k8s/helm/receipt-understanding/values.yaml \
+  -f values-cloud-gpu.yaml
 ```
 
 Watch startup:

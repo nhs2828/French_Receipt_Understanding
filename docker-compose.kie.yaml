@@ -10,6 +10,7 @@ services:
       - "8000:8000"
     environment:
       - PADDLEOCR_DEVICE=gpu
+      - SEG_DEVICE=cuda:0
     deploy:
       resources:
         reservations:

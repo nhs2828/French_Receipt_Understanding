@@ -16,7 +16,7 @@ class SegmentationParams(BaseSettings):
     iou: float = Field(0.45, ge=0.0, le=1.0)
     end2end: bool = False
     rect: bool = False
-    device: str = "cpu" # cpu
+    device: str = "cuda:0" # (e.g., cpu, cuda:0, 0, npu or npu:0)
 
     class Config:
         env_prefix = "SEG_"  # reads SEG_CONF, SEG_IOU, SEG_END2END, SEG_RECT
@@ -40,9 +40,11 @@ class PaddleOCRParams(BaseSettings):
     text_rec_score_thresh: float = Field(0.6, ge=0.0, le=1.0) # minimum confidence for a text line to be returned
     lang: str = "fr"  # language for recognition model
     # Runtime
-    engine: str = "onnxruntime"
-    # Device
-    device: str = "cpu"  # "cpu" or "gpu"
+    #use_onnx: bool = True
+    #use_gpu: bool = True
+    engine: str = "onnxruntime" # paddle_static onnxruntime, still have confict with onnx with yolo paddle ..
+    # # Device
+    device: str = "gpu"  # "cpu" or "gpu"
 
     class Config:
         env_prefix = "PADDLEOCR_"  # reads PADDLEORC_CONF, PADDLEORC_IOU, PADDLEORC_END2END, PADDLEORC_RECT
