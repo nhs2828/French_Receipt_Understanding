@@ -3,17 +3,23 @@
 
 grafana:
   adminPassword: admin   # change if this demo is ever exposed beyond localhost
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki.monitoring.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
   sidecar:
     dashboards:
       enabled: true       # auto-loads ConfigMaps labeled grafana_dashboard: "1" (see grafana-dashboard-configmap.yaml)
       label: grafana_dashboard
       searchNamespace: monitoring   # keep the dashboard ConfigMap in the same namespace as this release
   persistence:
-    enabled: false   # demo only — dashboards/settings reset on pod restart, which is fine for Friday
+    enabled: false   # dashboards/settings reset on pod restart,
 
 prometheus:
   prometheusSpec:
-    retention: 6h   # short retention is enough for a live demo, keeps disk usage low
+    retention: 6h   # logs retention
     resources:
       requests:
         cpu: 250m
@@ -23,10 +29,10 @@ prometheus:
     # that's what vision-service/servicemonitor.yaml and kie-service/servicemonitor.yaml rely on.
 
 alertmanager:
-  enabled: false   # not needed for a demo — no one's getting paged on Friday
+  enabled: false
 
 nodeExporter:
-  enabled: true   # gives you real CPU/mem per node for free, unlike the docker-compose cAdvisor workaround
+  enabled: true   # CPU/mem per node for free
 
 kubeStateMetrics:
   enabled: true

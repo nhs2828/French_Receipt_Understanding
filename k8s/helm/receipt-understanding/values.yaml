@@ -12,7 +12,6 @@ vision:
     port: 8000
   models:
     # Populated by `minikube mount ./services/vision-service/models:/mnt/host-models/vision`
-    # Swap this whole models block for an S3 init-container later — see DEPLOY.md.
     hostPath: /mnt/host-models/vision
   resources:
     requests:
@@ -20,11 +19,11 @@ vision:
       memory: "1Gi"
     limits:
       cpu: "2"
-      memory: "4Gi"   # bump if the pod OOMKills — PaddleOCR + YOLO-seg are memory-hungry
+      memory: "4Gi"   # bump if the pod OOMKills
   probes:
     initialDelaySeconds: 20
     periodSeconds: 10
-    failureThreshold: 6   # models take a while to load — don't flap the pod during startup
+    failureThreshold: 6   # models take a while to load
   # Set to {kubernetes.io/arch: amd64} if PaddlePaddle segfaults on your cluster's nodes.
   nodeSelector: {}
 
@@ -34,7 +33,7 @@ kie:
     tag: v1.0
     pullPolicy: Always
   service:
-    type: NodePort   # demo convenience — this is the front door
+    type: NodePort   # front door
     port: 8000
   models:
     hostPath: /mnt/host-models/kie

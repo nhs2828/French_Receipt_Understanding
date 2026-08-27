@@ -6,7 +6,7 @@ minikube start --driver=docker --cpus=4 --memory=8192
 Increase `--memory` if the vision-service pod OOMKills — PaddleOCR + YOLO-seg are heavy.
 
 ## Optional
-## 1. Enable the in-cluster registry (the "production way" — no Docker Hub creds needed)
+## 1. Enable the in-cluster registry
 ```bash
 minikube addons enable registry
 ```
@@ -41,10 +41,9 @@ minikube mount ./services/kie-service/models:/mnt/host-models/kie
 ```
 
 ### Cloud - Create the S3 credentials secret and configure your bucket
-bash
-kubectl create namespace receipt-understanding --dry-run=client -o yaml | kubectl apply -f -
 
 ```bash
+kubectl create namespace receipt-understanding --dry-run=client -o yaml | kubectl apply -f -
 kubectl create secret generic s3-model-creds \
   --namespace receipt-understanding \
   --from-literal=AWS_ACCESS_KEY_ID=<your-key-id> \
@@ -60,6 +59,7 @@ The readiness probes already account for this with generous initialDelaySeconds/
 but watch kubectl logs -n receipt-understanding <pod> -c pull-models if a pod seems stuck.
 
 ## 4. Deploy the services
+Skip this if use Helm to deploy
 ### local test
 ```bash
 kubectl apply -f k8s/00-namespace.yaml
@@ -80,10 +80,6 @@ kubectl apply -f k8s/kie-service/configmap_cloud.yaml
 kubectl apply -f k8s/kie-service/deployment_cloud.yaml
 kubectl apply -f k8s/kie-service/service.yaml
 ```
-Watch startup:
-```bash
-kubectl get pods -n receipt-understanding -w
-```
 
 ## 5. Install the monitoring stack
 ```bash
@@ -103,10 +99,22 @@ The release name **must** be `monitoring` — the ServiceMonitors' `release: mon
 depends on it for auto-discovery.
 
 ## 6. Load the dashboard and wire up scraping
+### no Helm
 ```bash
 kubectl apply -f k8s/monitoring/grafana-dashboard-configmap.yaml
 kubectl apply -f k8s/vision-service/servicemonitor.yaml
 kubectl apply -f k8s/kie-service/servicemonitor.yaml
+```
+### With Helm
+```bash
+helm install receipt-understanding k8s/helm/receipt-understanding \
+  --namespace receipt-understanding \
+  --create-namespace
+```
+
+Watch startup:
+```bash
+kubectl get pods -n receipt-understanding -w
 ```
 
 ## 7. Access everything
@@ -126,6 +134,5 @@ kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 909
 - `kubectl get pods -n receipt-understanding` stuck in `ImagePullBackOff` → the registry
   push/socat forward from step 1 likely isn't running, or the image wasn't actually pushed.
 - Pod `CrashLoopBackOff` right after start → check `kubectl logs -n receipt-understanding
-  <pod>` first; if it's a segfault, see the arm64/amd64 note in step 0.
-- Grafana shows no data → confirm `kubectl get servicemonitor -n receipt-understanding` shows
-  both, and check Prometheus's own Targets page (port-forwarded, `/targets`) for scrape errors.
+  <pod>`
+- kubectl logs <pod> -n receipt-understanding to check pod logs
