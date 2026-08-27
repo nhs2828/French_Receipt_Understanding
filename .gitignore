@@ -26,3 +26,4 @@ training/PaddleOCR/
 # unsure folder
 libs/observability/
 libs/pipeline_middleware/
+.DS_Store
