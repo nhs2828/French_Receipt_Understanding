@@ -4,6 +4,10 @@ metadata:
   name: vision-service-config
   namespace: {{ .Release.Namespace }}
 data:
-  # Nothing needed yet — Settings() defaults cover local/demo use.
-  # Future: S3_BUCKET / S3_MODEL_PREFIX for an init-container download step.
+{{- if eq .Values.vision.deployMode "cloud" }}
+  S3_BUCKET: {{ .Values.vision.s3.bucket | quote }}
+  S3_MODEL_PREFIX: {{ .Values.vision.s3.modelPrefix | quote }}
+  AWS_REGION: {{ .Values.vision.s3.region | quote }}
+{{- else }}
   PLACEHOLDER: "true"
+{{- end }}

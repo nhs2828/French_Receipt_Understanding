@@ -1,18 +1,27 @@
 # Default values for the receipt-understanding chart.
-# Override any of these with: helm install ... -f my-values.yaml
-# or: helm install ... --set vision.image.tag=v1.1
+# Override any of these with: helm install ... -f values-cloud-gpu.yaml
 
 vision:
   image:
-    repository: nhs2828/vision-service
+    repository: nhs2828/vision-service-cpu
     tag: v1.0
     pullPolicy: Always
   service:
     type: ClusterIP   # internal only — kie-service is the only caller
     port: 8000
+  deployMode: local    # "local" (hostPath) or "cloud" (S3 initContainer)
   models:
-    # Populated by `minikube mount ./services/vision-service/models:/mnt/host-models/vision`
-    hostPath: /mnt/host-models/vision
+    hostPath: /mnt/host-models/vision   # used only when deployMode: local
+  s3:                                    # used only when deployMode: cloud
+    bucket: "amz-s3-receipt-understanding-423051206837-eu-west-3-an"
+    modelPrefix: "models/vision/"
+    region: "eu-west-3"
+    credentialsSecretName: "s3-model-creds"
+  gpu:
+    enabled: false
+    count: 1
+    nodeSelector: {}
+    tolerations: []
   resources:
     requests:
       cpu: "500m"
@@ -24,19 +33,29 @@ vision:
     initialDelaySeconds: 20
     periodSeconds: 10
     failureThreshold: 6   # models take a while to load
-  # Set to {kubernetes.io/arch: amd64} if PaddlePaddle segfaults on your cluster's nodes.
   nodeSelector: {}
 
 kie:
   image:
-    repository: nhs2828/kie-service
+    repository: nhs2828/kie-service-cpu
     tag: v1.0
     pullPolicy: Always
   service:
     type: NodePort   # front door
     port: 8000
+  deployMode: local
   models:
     hostPath: /mnt/host-models/kie
+  s3:
+    bucket: "amz-s3-receipt-understanding-423051206837-eu-west-3-an"
+    modelPrefix: "models/kie/"
+    region: "eu-west-3"
+    credentialsSecretName: "s3-model-creds"
+  gpu:
+    enabled: false
+    count: 1
+    nodeSelector: {}
+    tolerations: []
   resources:
     requests:
       cpu: "500m"
@@ -51,10 +70,7 @@ kie:
   nodeSelector: {}
 
 monitoring:
-  # Must match the kube-prometheus-stack Helm release name — its ServiceMonitor
-  # selector auto-discovers anything labeled release: <this value>.
   releaseName: monitoring
-  # Namespace the kube-prometheus-stack / loki-stack releases live in.
   namespace: monitoring
   serviceMonitors:
     enabled: true

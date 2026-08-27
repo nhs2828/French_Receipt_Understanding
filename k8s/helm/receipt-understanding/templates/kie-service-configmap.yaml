@@ -4,7 +4,10 @@ metadata:
   name: kie-service-config
   namespace: {{ .Release.Namespace }}
 data:
-  # <service>.<namespace>.svc.cluster.local is k8s's internal DNS. Derived from
-  # .Release.Namespace so this never drifts if you deploy to a different namespace.
+  # <service>.<namespace>.svc.cluster.local is k8s's internal DNS.
   KIE_VISION_SERVICE_URL: "http://vision-service.{{ .Release.Namespace }}.svc.cluster.local:8000/api/v1/extract"
-  # Future: S3_BUCKET / S3_MODEL_PREFIX for an init-container download step.
+{{- if eq .Values.kie.deployMode "cloud" }}
+  S3_BUCKET: {{ .Values.kie.s3.bucket | quote }}
+  S3_MODEL_PREFIX: {{ .Values.kie.s3.modelPrefix | quote }}
+  AWS_REGION: {{ .Values.kie.s3.region | quote }}
+{{- end }}

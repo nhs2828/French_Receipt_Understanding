@@ -19,9 +19,44 @@ spec:
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
     spec:
-      {{- with .Values.kie.nodeSelector }}
+      {{- $nodeSelector := merge (dict) .Values.kie.nodeSelector (ternary .Values.kie.gpu.nodeSelector (dict) .Values.kie.gpu.enabled) }}
+      {{- if $nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml $nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.kie.gpu.enabled .Values.kie.gpu.tolerations }}
+      tolerations:
+        {{- toYaml .Values.kie.gpu.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if eq .Values.kie.deployMode "cloud" }}
+      initContainers:
+        - name: pull-models
+          image: public.ecr.aws/aws-cli/aws-cli:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "Syncing s3://$S3_BUCKET/$S3_MODEL_PREFIX -> /models"
+              aws s3 sync "s3://$S3_BUCKET/$S3_MODEL_PREFIX" /models --only-show-errors
+              echo "Done: $(du -sh /models)"
+              find /models -type f | sort
+          envFrom:
+            - configMapRef:
+                name: kie-service-config
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kie.s3.credentialsSecretName }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kie.s3.credentialsSecretName }}
+                  key: AWS_SECRET_ACCESS_KEY
+          volumeMounts:
+            - name: models
+              mountPath: /models
       {{- end }}
       containers:
         - name: kie-service
@@ -53,9 +88,22 @@ spec:
             initialDelaySeconds: {{ .Values.kie.probes.initialDelaySeconds }}
             periodSeconds: 15
           resources:
-            {{- toYaml .Values.kie.resources | nindent 12 }}
+            requests:
+              {{- toYaml .Values.kie.resources.requests | nindent 14 }}
+              {{- if .Values.kie.gpu.enabled }}
+              nvidia.com/gpu: {{ .Values.kie.gpu.count }}
+              {{- end }}
+            limits:
+              {{- toYaml .Values.kie.resources.limits | nindent 14 }}
+              {{- if .Values.kie.gpu.enabled }}
+              nvidia.com/gpu: {{ .Values.kie.gpu.count }}
+              {{- end }}
       volumes:
         - name: models
+          {{- if eq .Values.kie.deployMode "cloud" }}
+          emptyDir: {}
+          {{- else }}
           hostPath:
             path: {{ .Values.kie.models.hostPath }}
             type: Directory
+          {{- end }}

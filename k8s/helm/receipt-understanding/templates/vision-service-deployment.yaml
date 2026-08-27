@@ -19,9 +19,44 @@ spec:
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
     spec:
-      {{- with .Values.vision.nodeSelector }}
+      {{- $nodeSelector := merge (dict) .Values.vision.nodeSelector (ternary .Values.vision.gpu.nodeSelector (dict) .Values.vision.gpu.enabled) }}
+      {{- if $nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml $nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.vision.gpu.enabled .Values.vision.gpu.tolerations }}
+      tolerations:
+        {{- toYaml .Values.vision.gpu.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if eq .Values.vision.deployMode "cloud" }}
+      initContainers:
+        - name: pull-models
+          image: public.ecr.aws/aws-cli/aws-cli:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "Syncing s3://$S3_BUCKET/$S3_MODEL_PREFIX -> /models"
+              aws s3 sync "s3://$S3_BUCKET/$S3_MODEL_PREFIX" /models --only-show-errors
+              echo "Done: $(du -sh /models)"
+              find /models -type f | sort
+          envFrom:
+            - configMapRef:
+                name: vision-service-config
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.vision.s3.credentialsSecretName }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.vision.s3.credentialsSecretName }}
+                  key: AWS_SECRET_ACCESS_KEY
+          volumeMounts:
+            - name: models
+              mountPath: /models
       {{- end }}
       containers:
         - name: vision-service
@@ -50,9 +85,22 @@ spec:
             initialDelaySeconds: {{ .Values.vision.probes.initialDelaySeconds }}
             periodSeconds: 15
           resources:
-            {{- toYaml .Values.vision.resources | nindent 12 }}
+            requests:
+              {{- toYaml .Values.vision.resources.requests | nindent 14 }}
+              {{- if .Values.vision.gpu.enabled }}
+              nvidia.com/gpu: {{ .Values.vision.gpu.count }}
+              {{- end }}
+            limits:
+              {{- toYaml .Values.vision.resources.limits | nindent 14 }}
+              {{- if .Values.vision.gpu.enabled }}
+              nvidia.com/gpu: {{ .Values.vision.gpu.count }}
+              {{- end }}
       volumes:
         - name: models
+          {{- if eq .Values.vision.deployMode "cloud" }}
+          emptyDir: {}
+          {{- else }}
           hostPath:
             path: {{ .Values.vision.models.hostPath }}
             type: Directory
+          {{- end }}

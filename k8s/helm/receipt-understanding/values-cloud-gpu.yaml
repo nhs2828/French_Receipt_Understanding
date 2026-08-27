@@ -3,21 +3,13 @@ vision:
   gpu:
     enabled: true
     count: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: nvidia-tesla-t4
-    tolerations:
-      - key: nvidia.com/gpu
-        operator: Exists
-        effect: NoSchedule
+    nodeSelector: {}    # leave empty until you check `kubectl describe node <gpu-node>`
+    tolerations: []     # leave empty until you confirm the GPU node is tainted
 
 kie:
   deployMode: cloud
   gpu:
     enabled: true
     count: 1
-    nodeSelector:
-      cloud.google.com/gke-accelerator: nvidia-tesla-t4
-    tolerations:
-      - key: nvidia.com/gpu
-        operator: Exists
-        effect: NoSchedule
+    nodeSelector: {}
+    tolerations: []
