@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vision-service-config
+  namespace: receipt-understanding
+data:
+  S3_BUCKET: "amz-s3-receipt-understanding-423051206837-eu-west-3-an"
+  S3_MODEL_PREFIX: "models/vision/"
+  AWS_REGION: "eu-west-3"

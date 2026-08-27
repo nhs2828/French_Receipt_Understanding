@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vision-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: vision-service
+spec:
+  type: {{ .Values.vision.service.type }}
+  selector:
+    app: vision-service
+  ports:
+    - name: http
+      port: {{ .Values.vision.service.port }}
+      targetPort: 8000

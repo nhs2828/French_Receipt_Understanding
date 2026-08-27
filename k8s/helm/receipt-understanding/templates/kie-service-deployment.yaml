@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kie-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kie-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kie-service
+  template:
+    metadata:
+      labels:
+        app: kie-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      {{- with .Values.kie.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: kie-service
+          image: "{{ .Values.kie.image.repository }}:{{ .Values.kie.image.tag }}"
+          imagePullPolicy: {{ .Values.kie.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: kie-service-config
+          volumeMounts:
+            - name: models
+              mountPath: /app/models
+              readOnly: true
+          # NOTE: assumes kie-service exposes /api/v1/health/live and /health/ready like
+          # vision-service does. Confirm kie-service's routers.py actually includes a health
+          # router before relying on these.
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: 8000
+            initialDelaySeconds: {{ .Values.kie.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.kie.probes.periodSeconds }}
+            failureThreshold: {{ .Values.kie.probes.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/live
+              port: 8000
+            initialDelaySeconds: {{ .Values.kie.probes.initialDelaySeconds }}
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.kie.resources | nindent 12 }}
+      volumes:
+        - name: models
+          hostPath:
+            path: {{ .Values.kie.models.hostPath }}
+            type: Directory

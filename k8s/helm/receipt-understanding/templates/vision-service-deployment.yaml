@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vision-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: vision-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vision-service
+  template:
+    metadata:
+      labels:
+        app: vision-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      {{- with .Values.vision.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: vision-service
+          image: "{{ .Values.vision.image.repository }}:{{ .Values.vision.image.tag }}"
+          imagePullPolicy: {{ .Values.vision.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: vision-service-config
+          volumeMounts:
+            - name: models
+              mountPath: /app/models
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: 8000
+            initialDelaySeconds: {{ .Values.vision.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.vision.probes.periodSeconds }}
+            failureThreshold: {{ .Values.vision.probes.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/live
+              port: 8000
+            initialDelaySeconds: {{ .Values.vision.probes.initialDelaySeconds }}
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.vision.resources | nindent 12 }}
+      volumes:
+        - name: models
+          hostPath:
+            path: {{ .Values.vision.models.hostPath }}
+            type: Directory

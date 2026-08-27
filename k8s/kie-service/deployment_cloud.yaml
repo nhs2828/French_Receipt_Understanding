@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kie-service
+  namespace: receipt-understanding
+  labels:
+    app: kie-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kie-service
+  template:
+    metadata:
+      labels:
+        app: kie-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      initContainers:
+        - name: pull-models
+          image: public.ecr.aws/aws-cli/aws-cli:latest
+          command:
+            - sh
+            - -c
+            - |
+              echo "Syncing s3://$S3_BUCKET/$S3_MODEL_PREFIX -> /models"
+              aws s3 sync "s3://$S3_BUCKET/$S3_MODEL_PREFIX" /models --only-show-errors
+              echo "Done: $(du -sh /models)"
+              find /models -type f | sort
+          envFrom:
+            - configMapRef:
+                name: kie-service-config
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: s3-model-creds
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: s3-model-creds
+                  key: AWS_SECRET_ACCESS_KEY
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      containers:
+        - name: kie-service
+          image: nhs2828/kie-service:v1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: kie-service-config
+          volumeMounts:
+            - name: models
+              mountPath: /app/models
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/ready
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 10
+            failureThreshold: 8
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/live
+              port: 8000
+            initialDelaySeconds: 25
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "3Gi"
+      volumes:
+        - name: models
+          emptyDir: {}   # populated by the init container above, lives only for this pod's lifetime

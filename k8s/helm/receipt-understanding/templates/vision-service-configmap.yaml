@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vision-service-config
+  namespace: {{ .Release.Namespace }}
+data:
+  # Nothing needed yet — Settings() defaults cover local/demo use.
+  # Future: S3_BUCKET / S3_MODEL_PREFIX for an init-container download step.
+  PLACEHOLDER: "true"

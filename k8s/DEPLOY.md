@@ -33,14 +33,34 @@ docker push custom_name_here/kie-service:latest
 Re-run these two `build` + `push` pairs any time we change code
 
 ## 3. Mount local model weights into minikube
+### Local model test
 Two separate terminals, **left running** (each is a foreground process):
 ```bash
 minikube mount ./services/vision-service/models:/mnt/host-models/vision
 minikube mount ./services/kie-service/models:/mnt/host-models/kie
 ```
-Change for the S3 init-container in prod
+
+### Cloud - Create the S3 credentials secret and configure your bucket
+bash
+kubectl create namespace receipt-understanding --dry-run=client -o yaml | kubectl apply -f -
+
+```bash
+kubectl create secret generic s3-model-creds \
+  --namespace receipt-understanding \
+  --from-literal=AWS_ACCESS_KEY_ID=<your-key-id> \
+  --from-literal=AWS_SECRET_ACCESS_KEY=<your-secret-key>
+```
+Then edit k8s/vision-service/configmap.yaml and k8s/kie-service/configmap.yaml
+ — replace S3_BUCKET, S3_MODEL_PREFIX, and AWS_REGION with your real bucket details. 
+ Each Deployment's pull-models init container downloads the weights fresh into 
+ an emptyDir on every pod start — no more minikube mount, no host filesystem dependency.
+
+Startup will take longer now — model download time gets added on top of model load time. 
+The readiness probes already account for this with generous initialDelaySeconds/failureThreshold, 
+but watch kubectl logs -n receipt-understanding <pod> -c pull-models if a pod seems stuck.
 
 ## 4. Deploy the services
+### local test
 ```bash
 kubectl apply -f k8s/00-namespace.yaml
 kubectl apply -f k8s/vision-service/configmap.yaml
@@ -48,6 +68,16 @@ kubectl apply -f k8s/vision-service/deployment.yaml
 kubectl apply -f k8s/vision-service/service.yaml
 kubectl apply -f k8s/kie-service/configmap.yaml
 kubectl apply -f k8s/kie-service/deployment.yaml
+kubectl apply -f k8s/kie-service/service.yaml
+```
+### Cloud aws
+```bash
+kubectl apply -f k8s/00-namespace.yaml
+kubectl apply -f k8s/vision-service/configmap_cloud.yaml
+kubectl apply -f k8s/vision-service/deployment_cloud.yaml
+kubectl apply -f k8s/vision-service/service.yaml
+kubectl apply -f k8s/kie-service/configmap_cloud.yaml
+kubectl apply -f k8s/kie-service/deployment_cloud.yaml
 kubectl apply -f k8s/kie-service/service.yaml
 ```
 Watch startup:

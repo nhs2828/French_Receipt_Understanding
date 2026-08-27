@@ -1,0 +1,6 @@
+apiVersion: v2
+name: receipt-understanding
+description: vision-service + kie-service (receipt OCR + KIE pipeline)
+type: application
+version: 0.1.0
+appVersion: "v1.0"

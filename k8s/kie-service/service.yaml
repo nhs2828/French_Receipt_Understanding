@@ -6,7 +6,7 @@ metadata:
   labels:
     app: kie-service
 spec:
-  type: NodePort   # demo convenience — open with `minikube service kie-service -n receipt-understanding`
+  type: NodePort   # open with `minikube service kie-service -n receipt-understanding`
   selector:
     app: kie-service
   ports:

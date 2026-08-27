@@ -32,9 +32,6 @@ spec:
             - name: models
               mountPath: /app/models
               readOnly: true
-          # NOTE: assumes kie-service exposes /api/v1/health/live and /health/ready like
-          # vision-service does. Confirm kie-service's routers.py actually includes a health
-          # router before relying on these — swap to /docs or /api/v1/extract's OPTIONS if not.
           readinessProbe:
             httpGet:
               path: /api/v1/health/ready

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kie-service-config
+  namespace: {{ .Release.Namespace }}
+data:
+  # <service>.<namespace>.svc.cluster.local is k8s's internal DNS. Derived from
+  # .Release.Namespace so this never drifts if you deploy to a different namespace.
+  KIE_VISION_SERVICE_URL: "http://vision-service.{{ .Release.Namespace }}.svc.cluster.local:8000/api/v1/extract"
+  # Future: S3_BUCKET / S3_MODEL_PREFIX for an init-container download step.

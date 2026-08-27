@@ -1,0 +1,12 @@
+{{- if .Values.monitoring.dashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ocr-pipeline-dashboard
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    grafana_dashboard: "1"
+data:
+  ocr-pipeline.json: |
+{{ .Files.Get "dashboards/ocr-pipeline.json" | indent 4 }}
+{{- end }}

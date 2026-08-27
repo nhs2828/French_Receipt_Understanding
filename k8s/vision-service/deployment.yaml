@@ -19,10 +19,6 @@ spec:
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
     spec:
-      # PaddlePaddle needs amd64 — same constraint as `platform: linux/amd64` in docker-compose.
-      # Remove this nodeSelector once every node in your cluster is guaranteed amd64.
-      # nodeSelector:
-      #   kubernetes.io/arch: amd64
       containers:
         - name: vision-service
           image: nhs2828/vision-service:v1.0   # see DEPLOY.md for build/push steps

@@ -1,0 +1,20 @@
+{{- if .Values.monitoring.serviceMonitors.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vision-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Values.monitoring.releaseName }}
+spec:
+  selector:
+    matchLabels:
+      app: vision-service
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+{{- end }}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kie-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kie-service
+spec:
+  type: {{ .Values.kie.service.type }}
+  selector:
+    app: kie-service
+  ports:
+    - name: http
+      port: {{ .Values.kie.service.port }}
+      targetPort: 8000

@@ -1,0 +1,63 @@
+# Default values for the receipt-understanding chart.
+# Override any of these with: helm install ... -f my-values.yaml
+# or: helm install ... --set vision.image.tag=v1.1
+
+vision:
+  image:
+    repository: nhs2828/vision-service
+    tag: v1.0
+    pullPolicy: Always
+  service:
+    type: ClusterIP   # internal only — kie-service is the only caller
+    port: 8000
+  models:
+    # Populated by `minikube mount ./services/vision-service/models:/mnt/host-models/vision`
+    # Swap this whole models block for an S3 init-container later — see DEPLOY.md.
+    hostPath: /mnt/host-models/vision
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"   # bump if the pod OOMKills — PaddleOCR + YOLO-seg are memory-hungry
+  probes:
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    failureThreshold: 6   # models take a while to load — don't flap the pod during startup
+  # Set to {kubernetes.io/arch: amd64} if PaddlePaddle segfaults on your cluster's nodes.
+  nodeSelector: {}
+
+kie:
+  image:
+    repository: nhs2828/kie-service
+    tag: v1.0
+    pullPolicy: Always
+  service:
+    type: NodePort   # demo convenience — this is the front door
+    port: 8000
+  models:
+    hostPath: /mnt/host-models/kie
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "3Gi"
+  probes:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    failureThreshold: 6
+  nodeSelector: {}
+
+monitoring:
+  # Must match the kube-prometheus-stack Helm release name — its ServiceMonitor
+  # selector auto-discovers anything labeled release: <this value>.
+  releaseName: monitoring
+  # Namespace the kube-prometheus-stack / loki-stack releases live in.
+  namespace: monitoring
+  serviceMonitors:
+    enabled: true
+  dashboard:
+    enabled: true
