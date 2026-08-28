@@ -7,7 +7,7 @@ Architecture diagram -->
 
 ## Overview
 
-Given a photo or scan of a French receipt, the pipeline localizes the receipt, extracts and recognizes the text, and structures it into key fields (merchant, date, total, line items, etc.) — served through a FastAPI gateway and orchestrated across independently scalable microservices on Kubernetes.
+Given a photo of a French receipt, the pipeline localizes the receipt, extracts and recognizes the text, and structures it into key fields (merchant, date, total, line items, etc.) — served through a FastAPI gateway and orchestrated across independently scalable microservices on Kubernetes.
 
 ## Flow
 
@@ -45,7 +45,7 @@ Logs are shipped to **Loki**, metrics are scraped by **Prometheus**, and both ar
 - **Package management:** Helm
 
 **Data**
-- **Storage (images/PDFs):** AWS S3
+- **Storage (images):** AWS S3
 
 **Observability**
 - **Metrics:** Prometheus
