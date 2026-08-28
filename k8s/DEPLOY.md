@@ -5,7 +5,7 @@ minikube start --driver=docker --cpus=4 --memory=8192
 ```
 Increase `--memory` if the vision-service pod OOMKills — PaddleOCR + YOLO-seg are heavy.
 
-## Optional
+<!-- ## Optional
 ## 1. Enable the in-cluster registry
 ```bash
 minikube addons enable registry
@@ -16,9 +16,9 @@ this because the VM's network isn't directly reachable from the host):
 ```bash
 docker run --rm -it --network=host alpine ash -c \
   "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000"
-```
+``` -->
 
-## 2. Build and push both images
+## 1. Build and push both images
 ## Replace with Dockefile_cpu if want to run with cpu
 From the repo root:
 ```bash
@@ -32,7 +32,7 @@ docker push custom_name_here/kie-service:latest
 ```
 Re-run these two `build` + `push` pairs any time we change code
 
-## 3. Mount local model weights into minikube
+## 2. Mount local model weights into minikube
 ### Local model test
 Two separate terminals, **left running** (each is a foreground process):
 ```bash
@@ -58,7 +58,7 @@ Startup will take longer now — model download time gets added on top of model 
 The readiness probes already account for this with generous initialDelaySeconds/failureThreshold, 
 but watch kubectl logs -n receipt-understanding <pod> -c pull-models if a pod seems stuck.
 
-## 4. Deploy the services
+## 3. Deploy the services
 Skip this if use Helm to deploy
 ### local test
 ```bash
@@ -81,7 +81,7 @@ kubectl apply -f k8s/kie-service/deployment_cloud.yaml
 kubectl apply -f k8s/kie-service/service.yaml
 ```
 
-## 5. Install the monitoring stack
+## 4. Install the monitoring stack
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
@@ -98,7 +98,7 @@ helm install loki grafana/loki-stack \
 The release name **must** be `monitoring` — the ServiceMonitors' `release: monitoring` label
 depends on it for auto-discovery.
 
-## 6. Load the dashboard and wire up scraping
+## 5. Load the dashboard and wire up scraping
 ### no Helm
 ```bash
 kubectl apply -f k8s/monitoring/grafana-dashboard-configmap.yaml
@@ -118,7 +118,7 @@ Watch startup:
 kubectl get pods -n receipt-understanding -w
 ```
 
-## 7. Access everything
+## 6. Access everything
 ## add more port forward to observer other services
 ```bash
 # Get the endpoints url

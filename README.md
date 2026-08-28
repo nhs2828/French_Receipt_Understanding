@@ -2,7 +2,7 @@
 
 An end-to-end, scalable pipeline for extracting key information from French receipt images and scanned documents — built as a set of microservices deployed on Kubernetes, with vision-based document parsing and key information extraction (KIE) models behind a single API.
 
-Architecture diagram -->
+Architecture diagram
 ![Architecture](docs/OCR_arch.png)
 
 ## Overview
@@ -90,7 +90,6 @@ Logs are shipped to **Loki**, metrics are scraped by **Prometheus**, and both ar
 ├── training/                     # Model training pipelines
 ├── docker-compose.kie.yaml       # Local dev stack (GPU)
 ├── docker-compose.kie_cpu.yaml   # Local dev stack (CPU)
-├── prometheus.yml
 ├── s3_model_download.sh
 ├── s3_model_upload.sh
 └── DEPLOY.md
