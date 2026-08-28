@@ -45,7 +45,7 @@ Logs are shipped to **Loki**, metrics are scraped by **Prometheus**, and both ar
 - **Package management:** Helm
 
 **Data**
-- **Storage (images):** AWS S3
+- **Storage (model weights):** AWS S3
 
 **Observability**
 - **Metrics:** Prometheus
