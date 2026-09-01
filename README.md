@@ -20,7 +20,8 @@ Errors tracking
 ![monitor](docs/error.png)
 Infrastructure monitoring
 ![monitor](docs/inf_usage.png)
-
+Log Tracing
+![monitor](docs/log_tracing.png)
 ## Flow
 
 ```

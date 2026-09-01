@@ -1,7 +1,12 @@
 # Minikube demo deploy
 ## 0. Start minikube with enough resources
 ```bash
+# 24576
+# cpu
 minikube start --driver=docker --cpus=4 --memory=8192
+# gpu
+minikube start --driver=docker --cpus=4 --memory=8192 --gpus=all
+minikube addons enable nvidia-device-plugin
 ```
 Increase `--memory` if the vision-service pod OOMKills — PaddleOCR + YOLO-seg are heavy.
 
@@ -132,6 +137,11 @@ kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
 # Prometheus, for raw queries
 kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
 ```
+## 7.Shutdown
+```bash
+minikube stop
+minikube delete --all
+```
 
 ## Quick troubleshooting
 - `kubectl get pods -n receipt-understanding` stuck in `ImagePullBackOff` → the registry
@@ -140,3 +150,38 @@ kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 909
   <pod>`
 - kubectl logs <pod> -n receipt-understanding to check pod logs
 - kubectl describe <pod> -n receipt-understanding to check startup
+
+## Misc setup fresh machine (linux/ubuntu)
+For people like me who couldn't remember all the commands
+### AWS CLI
+```bash
+curl -fsSL https://awscli.amazonaws.com/v2/install.sh | bash
+export PATH=$PATH:/root/.local/bin
+```
+
+### Install minikube
+```bash
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+rm minikube-linux-amd64
+```
+
+### Install NVIDIA toolkit for nvidia gpu
+```bash
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \ sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \ tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+apt update
+apt install -y nvidia-container-toolkit
+```
+
+### kubectl
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+rm kubectl
+```
+
+### Helm
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
