@@ -9,6 +9,18 @@ Architecture diagram
 
 Given a photo of a French receipt, the pipeline localizes the receipt, extracts and recognizes the text, and structures it into key fields (merchant, date, total, line items, etc.) — served through a FastAPI gateway and orchestrated across independently scalable microservices on Kubernetes.
 
+## Showcase
+### With real tickets
+![showcase](docs/image_5.jpg)
+![showcase](docs/showcase_5.png)
+### Monnitor with Grafana
+Pipeline performance
+![monitor](docs/Pipeline_perf.png)
+Errors tracking
+![monitor](docs/error.png)
+Infrastructure monitoring
+![monitor](docs/inf_usage.png)
+
 ## Flow
 
 ```
