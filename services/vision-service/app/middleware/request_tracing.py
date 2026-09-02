@@ -1,6 +1,7 @@
 """
-Middleware sinh/giữ request_id cho mỗi request, gắn vào contextvar để logging.py
-tự động đính kèm vào mọi log line, trả lại trong response header.
+Middleware generates/retains a request_id for each request, 
+attaches it to a contextvar so logging.py automatically includes it
+in every log line, and returns it in the response header.
 """
 import uuid
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -23,9 +24,10 @@ class RequestTracingMiddleware(BaseHTTPMiddleware):
         finally:
             request_id_ctx.reset(token)
 
-        # Dùng request.state.request_id (không phải biến local request_id) vì
-        # endpoint có thể đã override bằng request_id do client tự truyền
-        # (xem app/api/v1/endpoints/extract.py) - đảm bảo response header khớp
-        # với request_id thật sự được dùng trong log/response body.
+        # Uses request.state.request_id (instead of the local request_id variable)
+        # because the endpoint may have overridden it with 
+        # a client-supplied request_id (see app/api/v1/endpoints/extract.py)
+        # —ensuring the response header matches the actual request_id 
+        # used in logs and the response body.
         response.headers[REQUEST_ID_HEADER] = request.state.request_id
         return response

@@ -1,6 +1,7 @@
 """
-Middleware chặn sớm request có Content-Length vượt giới hạn, trước khi FastAPI
-đọc/parse body - tránh tốn CPU/RAM decode ảnh quá lớn (rủi ro OOM/DoS).
+Middleware early-intercepts requests exceeding the Content-Length
+limit before FastAPI reads or parses the body—preventing
+CPU/RAM consumption from decoding oversized images (OOM/DoS risk)
 """
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request

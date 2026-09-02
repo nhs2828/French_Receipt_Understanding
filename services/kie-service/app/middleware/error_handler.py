@@ -51,5 +51,5 @@ def register_exception_handlers(app: FastAPI) -> None:
         PIPELINE_ERRORS.labels(error_code=exc.error_code, stage=exc.stage or "unknown").inc()
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=_error_body("INTERNAL_SERVER_ERROR", "Unhandled errors"),
+            content=_error_body("INTERNAL_SERVER_ERROR", "Unknown error occurred"),
         )
