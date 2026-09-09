@@ -1,9 +1,9 @@
 """
-Đánh giá chi tiết precision/recall/F1 theo TỪNG entity (không chỉ overall F1),
-chạy được trên bất kỳ checkpoint nào -- dùng để so sánh các checkpoint hoặc
-xác định entity nào đang học yếu.
+Detailed precision/recall/F1 evaluation per ENTITY (not just overall F1),
+executable on any checkpoint -- used to compare checkpoints or identify
+which specific entities are performing poorly.
 
-Cách chạy:
+Usage:
     python eval.py --config configs/sroie.yaml --checkpoint outputs/sroie_run1/final
     python eval.py --config configs/sroie.yaml --checkpoint outputs/sroie_run1/checkpoint-760
 """
@@ -21,7 +21,7 @@ from model_utils import load_config, load_model_and_processor, setup_logging
 def main(config_path, checkpoint):
     config = load_config(config_path)
 
-    # Log ra cùng thư mục checkpoint đang đánh giá, để tiện đối chiếu sau này
+    # Log to the same evaluation checkpoint directory for easy reference later
     setup_logging(checkpoint, log_filename="eval.log")
 
     entity_fields = config["dataset"]["entity_fields"]
@@ -30,7 +30,7 @@ def main(config_path, checkpoint):
     label2id = {l: i for i, l in enumerate(label_list)}
 
     root_dir = config["dataset"]["root_dir"]
-    print("Đang load test set...")
+    print("Loading test set...")
     eval_raw = load_split(root_dir, "test", entity_fields, label2id)
 
     model, processor = load_model_and_processor(config, label_list, checkpoint=checkpoint)
@@ -55,7 +55,7 @@ def main(config_path, checkpoint):
         ),
     )
 
-    print(f"\nĐang chạy inference trên checkpoint: {checkpoint}\n")
+    print(f"\nRunning inference on checkpoint: {checkpoint}\n")
     predictions_output = trainer.predict(eval_ds)
     predictions = np.argmax(predictions_output.predictions, axis=2)
     labels = predictions_output.label_ids

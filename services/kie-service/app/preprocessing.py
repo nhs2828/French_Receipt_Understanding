@@ -1,13 +1,13 @@
 """
-Hàm tiền xử lý dùng chung cho mọi dataset -- không phụ thuộc field/nhãn cụ thể.
+Preprocessing functions for all datasets -- independent of specific fields/labels.
 """
 import re
 
 
 def build_label_list(entity_fields):
-    """Từ entity_fields khai báo trong config, tự sinh danh sách nhãn BIO đầy đủ.
+    """From entity_fields declared in config, automatically generate complete BIO label list.
 
-    Ví dụ entity_fields = [{"label": "COMPANY"}, {"label": "DATE"}]
+    Example entity_fields = [{"label": "COMPANY"}, {"label": "DATE"}]
     -> ["O", "B-COMPANY", "I-COMPANY", "B-DATE", "I-DATE"]
     """
     label_list = ["O"]
@@ -19,8 +19,8 @@ def build_label_list(entity_fields):
 
 
 def tokenize_and_align(examples, processor, max_length=512):
-    """Gọi processor (LayoutLMv3Processor...) -- tự động tokenize + align label
-    theo subword (token đầu của mỗi word giữ label thật, còn lại gán -100)."""
+    """Invoke processor (LayoutLMv3Processor...) -- automatically tokenizes + aligns labels
+    by subword (first token of each word retains the true label, remaining tokens assigned -100)."""
     return processor(
         examples["image"], examples["words"], boxes=examples["bboxes"],
         word_labels=examples["ner_tags"],
@@ -28,76 +28,35 @@ def tokenize_and_align(examples, processor, max_length=512):
     )
 
 
-# def group_entities(word_level_results):
-#     """
-#     word_level_results: list[{"text": str, "label": str, "box": [...]}]
-#     Gộp các word liên tiếp cùng 1 entity (theo chuẩn BIO) thành chuỗi hoàn chỉnh.
-
-#     Trả về: dict {entity_name: [chuỗi 1, chuỗi 2, ...]}
-#     """
-#     entities = {}
-#     current_label, current_text = None, []
-
-#     filter_criteras = {
-#         'max_y_total':0,
-#         'max_len_date':0,
-#         'max_merchant_bbox':0
-#     }
-
-#     def flush():
-#         if current_label:
-#             entities.setdefault(current_label, []).append(" ".join(current_text))
-
-
-#     for item in word_level_results:
-#         print(f"{item['text']} | {item['label']} | {item['box']}")
-#         print(entities)
-#         print("\n")
-#         label = item["label"]
-#         if label == "O":
-#             flush()
-#             current_label, current_text = None, []
-#             continue
-
-#         tag, ent = label.split("-", 1)
-#         if tag == "B" or ent != current_label:
-#             flush()
-#             current_label, current_text = ent, [item["text"]]
-#         else:
-#             current_text.append(item["text"])
-
-#     flush()
-#     return entities
-
 def _has_amount(text):
-    """True nếu text chứa ít nhất 1 số (có thể kèm dấu thập phân/nghìn) --
-    dùng để loại các group TOTAL bị model gán nhầm vào chữ label (vd "TTC",
-    "TOTAL", "NET A PAYER") thay vì con số tiền thật."""
+    """True if text contains at least 1 digit (may include decimal/thousand separators) --
+    used to filter out TOTAL groups misassigned by the model to label strings (e.g. "TTC",
+    "TOTAL", "NET A PAYER") instead of the actual monetary amount."""
     return bool(re.search(r"\d", text))
 
 def group_entities(word_level_results):
     """
     word_level_results: list[{"text": str, "label": str, "box": [x0,y0,x1,y1]}]
-    Gộp các word liên tiếp cùng 1 entity (theo chuẩn BIO) thành chuỗi hoàn chỉnh.
+    Merge consecutive words belonging to the same entity (following BIO format) into a complete string.
 
-    Không cần merge nhiều box lại -- các word tách ra từ CÙNG 1 dòng OCR
-    (parse_box_file) vốn đã dùng CHUNG 1 bbox (bbox của cả dòng), nên chỉ cần
-    lấy box của word đầu tiên trong group là đủ đại diện cho cả group.
+    No need to merge multiple bounding boxes -- words split from the SAME OCR line
+    (via parse_box_file) already SHARE a single bbox (the entire line's bbox), so simply
+    using the bbox of the first word in the group is sufficient to represent the entire group.
 
-    Nếu 1 label có NHIỀU group tách rời (model predict trùng field ở nhiều vị
-    trí, vd TOTAL xuất hiện cả ở dòng TTC lẫn dòng TOTAL thật), chỉ giữ lại
-    ĐÚNG 1 group theo tiêu chí riêng cho từng field:
-        - MERCHANT: group có bbox diện tích LỚN NHẤT (chữ tên cửa hàng
-          thường in to/đậm hơn các dòng khác -> bbox lớn hơn).
-        - DATE: group có chuỗi text DÀI NHẤT sau khi join.
-        - TOTAL: group có bbox NẰM THẤP NHẤT trên ảnh (bbox[3] -- cạnh dưới
-          -- lớn nhất) -- dòng TOTAL thật luôn in SAU các dòng breakdown
-          (TTC, sous-total) phía trên nó.
-        - ZIPCODE: chỉ giữ lại KÝ TỰ SỐ trong text (loại bỏ chữ/khoảng
-          trắng/dấu OCR lẫn vào, vd "75001 PARIS" -> "75001").
-        - Các field khác: giữ group ĐẦU TIÊN theo thứ tự đọc (hành vi cũ).
+    If a single label yields MULTIPLE disconnected groups (model predicts duplicate fields across
+    different locations, e.g., TOTAL appearing in both the TTC line and the actual TOTAL line),
+    keep EXACTLY ONE group based on field-specific criteria:
+        - MERCHANT: Group with the LARGEST bbox area (store name text is usually
+          printed larger/bolder than other lines -> larger bbox).
+        - DATE: Group with the LONGEST text string after joining.
+        - TOTAL: Group located LOWEST on the image (highest bbox[3] -- bottom edge coordinate)
+          -- the actual TOTAL line is always printed BELOW preceding breakdown lines
+          (TTC, subtotal) above it.
+        - ZIPCODE: Retain ONLY NUMERIC CHARACTERS in text (strip out mixed OCR letters/spaces/punctuation,
+          e.g., "75001 PARIS" -> "75001").
+        - Other fields: Keep the FIRST group in reading order (default legacy behavior).
 
-    Trả về: dict {entity_name: chuỗi} -- MỖI field đúng 1 giá trị.
+    Returns: dict {entity_name: string} -- EXACTLY ONE value per field.
     """
     raw_groups = {}
     current_label, current_text, current_box = None, [], None
@@ -138,7 +97,7 @@ def group_entities(word_level_results):
             entities[label] = [best["text"]]
         elif label == "TOTAL":
             numeric_groups = [g for g in groups if _has_amount(g["text"])]
-            pool = numeric_groups or groups  # fallback nếu không group nào có số
+            pool = numeric_groups or groups  # Fallback if no group contains digits
             best = max(pool, key=lambda g: g["box"][3])
             entities[label] = [best["text"]]
         elif label == "ZIPCODE":

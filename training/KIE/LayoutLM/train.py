@@ -1,8 +1,8 @@
 """
-Train model KIE (LayoutLMv3/LayoutXLM theo config) -- toàn bộ tham số đọc từ file config .yaml, không hard-code
-trong code. Đổi dataset/hyperparameter chỉ cần đổi config, không sửa file này.
+Train KIE model (LayoutLMv3/LayoutXLM according to config) -- all parameters are read from the .yaml config file, nothing is hard-coded.
+Changing datasets/hyperparameters only requires modifying the config without touching this file.
 
-Cách chạy:
+Usage:
     python train.py --config configs/sroie.yaml
 """
 
@@ -23,12 +23,13 @@ from model_utils import (
 
 
 def _find_resumable_checkpoint(output_dir):
-    """Tìm checkpoint gần nhất CÒN NGUYÊN VẸN trong output_dir để resume.
+    """Find the most recent checkpoint in output_dir that is still valid for resuming.
 
-    Nếu training bị ngắt (Ctrl+C, mất điện, đóng terminal...) đúng lúc đang ghi
-    checkpoint, file (thường là optimizer.pt) có thể bị dở dang/hỏng. Hàm này
-    kiểm tra checkpoint mới nhất trước, nếu thiếu/hỏng thì tự lùi về checkpoint
-    liền trước, không cần bạn tự tay xoá/tìm thủ công.
+    If training is interrupted (Ctrl+C, power loss, terminal closure...), the checkpoint file
+    (usually optimizer.pt) may be corrupted. This function checks the latest checkpoint first,
+    and if it's missing or corrupted, it falls back to the previous checkpoint,
+    without requiring manual deletion/searching.
+
     """
     if not Path(output_dir).is_dir():
         return None
@@ -47,8 +48,8 @@ def _find_resumable_checkpoint(output_dir):
         )
         if has_model and has_others:
             return str(ckpt)
-        print(f"[CẢNH BÁO] Checkpoint {ckpt} thiếu file hoặc file rỗng (có thể do bị ngắt "
-              f"giữa lúc lưu) -- bỏ qua, thử checkpoint trước đó.")
+        print(f"[WARNING] Checkpoint {ckpt} has missing or empty files (possibly interrupted "
+              f"during saving) -- skipping, attempting previous checkpoint.")
 
     return None
 
@@ -56,8 +57,8 @@ def _find_resumable_checkpoint(output_dir):
 def main(config_path, resume=False):
     config = load_config(config_path)
 
-    # Bật log ra file NGAY từ đầu (trước mọi print khác) để không bỏ sót gì --
-    # tránh mất log nếu train qua SSH bị rớt kết nối hoặc đóng terminal.
+    # Enable logging to file IMMEDIATELY at the start (before any other print calls) to capture everything --
+    # prevents log loss if training over SSH experiences connection drops or the terminal closes.
     output_dir = config["training"]["output_dir"]
     setup_logging(output_dir)
 
@@ -69,16 +70,16 @@ def main(config_path, resume=False):
 
     # ---------------- 1. Load raw data ----------------
     root_dir = config["dataset"]["root_dir"]
-    print("\nĐang load train set...")
+    print("\nLoading train set...")
     train_raw = load_split(root_dir, "train", entity_fields, label2id)
-    print("Đang load test set...")
+    print("Loading test set...")
     eval_raw = load_split(root_dir, "test", entity_fields, label2id)
 
     train_rate = check_match_rate(train_raw, "train")
     eval_rate = check_match_rate(eval_raw, "test")
     if train_rate < 60:
-        print("\n[CẢNH BÁO] Tỷ lệ gán entity dưới 60% -- kiểm tra lại format entities/*.txt "
-              "và entity_fields trong config trước khi train tiếp.\n")
+        print("\n[WARNING] Entity assignment rate below 60% -- verify entities/*.txt format "
+              "and entity_fields in config before continuing training.\n")
 
     # ---------------- 2. Model + processor ----------------
     model, processor = load_model_and_processor(config, label_list)
@@ -89,13 +90,13 @@ def main(config_path, resume=False):
     def _preprocess(examples):
         return tokenize_and_align(examples, processor, max_length)
 
-    print("\nĐang tiền xử lý train set...")
+    print("\nLoading train set...")
     train_ds = train_raw.map(
         _preprocess, batched=True, batch_size=1,
         remove_columns=train_raw.column_names, writer_batch_size=20,
     )
     #exit()
-    print("Đang tiền xử lý test set...")
+    print("Loading test set...")
     eval_ds = eval_raw.map(
         _preprocess, batched=True, batch_size=1,
         remove_columns=eval_raw.column_names, writer_batch_size=20,
@@ -138,7 +139,7 @@ def main(config_path, resume=False):
 
     # ---------------- 5. Trainer (weighted hoặc thường, theo config) ----------------
     if tcfg.get("use_class_weights", False):
-        print("\nĐang tính class weights...")
+        print("\nCalculating class weights...")
         class_weights = compute_class_weights(train_ds, len(label_list))
         print({l: round(w, 3) for l, w in zip(label_list, class_weights.tolist())})
         trainer = WeightedTrainer(
@@ -159,30 +160,30 @@ def main(config_path, resume=False):
     if resume:
         resume_checkpoint = _find_resumable_checkpoint(output_dir)
         if resume_checkpoint:
-            print(f"\n[RESUME] Tiếp tục training từ checkpoint: {resume_checkpoint}\n")
+            print(f"\n[RESUME] Continuing training from checkpoint: {resume_checkpoint}\n")
         else:
-            print("\n[RESUME] Không tìm thấy checkpoint hợp lệ trong output_dir -- train từ đầu.\n")
+            print("\n[RESUME] No valid checkpoint found in output_dir -- starting training from scratch.\n")
 
-    print("\n===== BẮT ĐẦU TRAINING =====\n")
+    print("\n===== STARTING TRAINING =====\n")
     train_result = trainer.train(resume_from_checkpoint=resume_checkpoint)
     trainer.save_metrics("train", train_result.metrics)
     trainer.log_metrics("train", train_result.metrics)
     save_log_history(trainer, output_dir)
 
-    print("\n===== ĐÁNH GIÁ CUỐI =====\n")
+    print("\n===== FINAL EVALUATION =====\n")
     print(trainer.evaluate())
 
     final_dir = f"{output_dir}/final"
     trainer.save_model(final_dir)
     processor.save_pretrained(final_dir)
-    print(f"\nĐã lưu model tốt nhất tại: {final_dir}")
+    print(f"\nBest model saved at: {final_dir}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, required=True, help="Đường dẫn file config .yaml")
+    parser.add_argument("--config", type=str, required=True, help="Path to config file .yaml")
     parser.add_argument("--resume", action="store_true",
-                         help="Tiếp tục training từ checkpoint gần nhất trong output_dir "
-                              "(tự động bỏ qua checkpoint bị hỏng do ngắt giữa chừng)")
+                         help="Continue training from the most recent checkpoint in output_dir "
+                              "(automatically skip corrupted checkpoints)")
     args = parser.parse_args()
     main(args.config, resume=args.resume)

@@ -1,16 +1,16 @@
 # =============================================================
-# Config cho dataset MC-OCR (tiếng Việt - hóa đơn bán lẻ)
-# Nguồn: Mobile Captured Receipt Recognition Challenge (RIVF 2021)
-# 4 field chính thức: SELLER, SELLER ADDRESS, TIMESTAMP, TOTAL COST
+# Configuration for the MC-OCR dataset (Vietnamese - retail receipts)
+# Source: Mobile Captured Receipt Recognition Challenge (RIVF 2021)
+# 4 official fields: SELLER, SELLER ADDRESS, TIMESTAMP, TOTAL COST
 #
-# LƯU Ý: MC-OCR gốc KHÔNG có cấu trúc img/box/entities như SROIE.
-# Cần chạy scripts/convert_mcocr.py trước để convert train.csv gốc
-# sang đúng cấu trúc thư mục mà data_loader.py yêu cầu.
+# NOTE: The original MC-OCR dataset DOES NOT follow the img/box/entities structure like SROIE.
+# You must run scripts/convert_mcocr.py first to convert the raw train.csv
+# into the exact directory structure required by data_loader.py.
 # =============================================================
 
 dataset:
   root_dir: ./data/MC-OCR-VN
-  ocr_lang: vi            # PaddleOCR cần model rec tiếng Việt, hoặc dùng VietOCR riêng
+  ocr_lang: vi            # PaddleOCR needs recognition model for Vietnamese, or use VietOCR separately
 
   entity_fields:
     - json_key: seller
@@ -23,8 +23,8 @@ dataset:
       label: TOTAL
 
 model:
-  # Dùng layoutxlm cho tiếng Việt -- tokenizer XLM-R xử lý dấu tốt hơn RoBERTa.
-  # Đổi ngược lại "layoutlmv3" nếu chỉ cần demo nhanh, không cần chất lượng tối ưu.
+  # Use layoutxlm for Vietnamese -- XLM-R tokenizer handles diacritics better than RoBERTa.
+  # Switch back to "layoutlmv3" if you only need a quick demo, not optimal quality.
   architecture: layoutxlm
   base_checkpoint: microsoft/layoutxlm-base
   max_length: 512
@@ -47,8 +47,8 @@ training:
   save_total_limit: 2
   early_stopping_patience: 5
 
-  # MC-OCR chỉ có 4 field nhưng receipt tiếng Việt thường dài, nhiều dòng sản phẩm
-  # -> tỷ lệ token "O" so với entity có thể cao hơn SROIE, cân nhắc bật nếu F1 thấp kéo dài
+  # MC-OCR only has 4 fields, but Vietnamese receipts are often long with many line items
+  # -> the ratio of "O" tokens relative to entities may be higher than SROIE; consider enabling if F1 stays low
   use_class_weights: false
 
   dataloader_num_workers: 2

@@ -1,12 +1,12 @@
 """
-Hàm tiền xử lý dùng chung cho mọi dataset -- không phụ thuộc field/nhãn cụ thể.
+Preprocessing functions for all datasets -- independent of specific fields/labels.
 """
 
 
 def build_label_list(entity_fields):
-    """Từ entity_fields khai báo trong config, tự sinh danh sách nhãn BIO đầy đủ.
+    """From entity_fields declared in config, automatically generate complete BIO label list.
 
-    Ví dụ entity_fields = [{"label": "COMPANY"}, {"label": "DATE"}]
+    Example entity_fields = [{"label": "COMPANY"}, {"label": "DATE"}]
     -> ["O", "B-COMPANY", "I-COMPANY", "B-DATE", "I-DATE"]
     """
     label_list = ["O"]
@@ -18,8 +18,8 @@ def build_label_list(entity_fields):
 
 
 def tokenize_and_align(examples, processor, max_length=512):
-    """Gọi processor (LayoutLMv3Processor...) -- tự động tokenize + align label
-    theo subword (token đầu của mỗi word giữ label thật, còn lại gán -100)."""
+    """Invoke processor (LayoutLMv3Processor...) -- automatically tokenizes + aligns labels
+    by subword (first token of each word retains the true label, remaining tokens assigned -100)."""
     return processor(
         examples["image"], examples["words"], boxes=examples["bboxes"],
         word_labels=examples["ner_tags"],
@@ -30,9 +30,9 @@ def tokenize_and_align(examples, processor, max_length=512):
 def group_entities(word_level_results):
     """
     word_level_results: list[{"text": str, "label": str, "box": [...]}]
-    Gộp các word liên tiếp cùng 1 entity (theo chuẩn BIO) thành chuỗi hoàn chỉnh.
+    Group consecutive words belonging to the same entity (according to BIO scheme) into complete strings.
 
-    Trả về: dict {entity_name: [chuỗi 1, chuỗi 2, ...]}
+    Returns: dict {entity_name: [string 1, string 2, ...]}
     """
     entities = {}
     current_label, current_text = None, []

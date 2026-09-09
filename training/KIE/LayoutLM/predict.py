@@ -1,8 +1,8 @@
 """
-Inference trên 1 ảnh thật: OCR (PaddleOCR) -> model KIE (LayoutLMv3/LayoutXLM theo config) -> kết quả entity.
+Inference on a real image: OCR (PaddleOCR) -> KIE model (LayoutLMv3/LayoutXLM according to config) -> extracted entities.
 
-Cách chạy:
-    python predict.py --config configs/sroie.yaml \\
+Usage:
+    python predict.py --config configs/sroie.yaml \
         --checkpoint outputs/sroie_run1/final --image invoice.jpg
 """
 
@@ -17,8 +17,8 @@ from model_utils import load_config, load_model_and_processor, setup_logging
 
 
 class KIEPredictor:
-    """Load model + OCR engine 1 lần, gọi .predict(image_path) nhiều lần
-    -- đúng pattern production, tránh load lại model mỗi request."""
+    """Load model + OCR engine once, call .predict(image_path) multiple times
+    -- standard production pattern to avoid reloading the model on every request."""
 
     def __init__(self, config_path, checkpoint):
         self.config = load_config(config_path)
@@ -52,11 +52,11 @@ class KIEPredictor:
                 x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
                 box = normalize_bbox([x0, y0, x1, y1], w, h)
 
-                # QUAN TRỌNG: tách 1 vùng OCR detect được (có thể chứa nhiều từ,
-                # vd "Date 02/03/2018") thành từng word riêng -- PHẢI giống hệt
-                # cách data_loader.parse_box_file tách word lúc train, nếu không
-                # model sẽ nhận input granularity khác lúc train và lúc predict,
-                # dẫn tới đoán sai/đoán "O" dù model đã học đúng field đó.
+                # CRITICAL: Split a detected OCR region (which may contain multiple words,
+                # e.g., "Date 02/03/2018") into individual words -- MUST match exactly
+                # how data_loader.parse_box_file splits words during training. Otherwise,
+                # the model receives a different input granularity during prediction than training,
+                # causing misclassifications or defaulting to "O" even if the model learned the field correctly.
                 for w_ in _split_word(text):
                     words.append(w_)
                     boxes.append(box)
@@ -64,7 +64,7 @@ class KIEPredictor:
         return image, words, boxes
 
     def predict(self, img_path, return_word_level=False):
-        """Trả về dict {entity: [giá trị, ...]}, hoặc list word-level nếu return_word_level=True."""
+        """Return a dict {entity: [value, ...]}, or a list of word-level predictions if return_word_level=True."""
         image, words, boxes = self._run_ocr(img_path)
         if not words:
             return [] if return_word_level else {}
@@ -104,14 +104,14 @@ if __name__ == "__main__":
     parser.add_argument("--image", type=str, required=True)
     args = parser.parse_args()
 
-    # Chỉ log khi chạy qua CLI (script độc lập) -- KHÔNG gọi trong __init__ của
-    # KIEPredictor vì class này còn dùng để import vào service khác (tránh
-    # redirect stdout toàn cục ngoài ý muốn khi dùng như 1 thư viện).
+    # Only log when executed via CLI (standalone script) -- DO NOT call in KIEPredictor.__init__
+    # because this class is also imported into other services (prevents unwanted
+    # global stdout redirection when used as a library).
     setup_logging(args.checkpoint, log_filename="predict.log")
 
     predictor = KIEPredictor(args.config, args.checkpoint)
     entities = predictor.predict(args.image)
 
-    print(f"\n===== Kết quả KIE: {args.image} =====")
+    print(f"\n===== KIE Results: {args.image} =====")
     for k, v in entities.items():
         print(f"{k}: {v}")

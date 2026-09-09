@@ -1,15 +1,15 @@
 # =============================================================
-# Config cho dataset SROIE (tiếng Anh)
-# Muốn train dataset khác: copy file này, đổi root_dir + entity_fields
-# (yêu cầu dataset mới có cùng cấu trúc thư mục img/box/entities như SROIE)
+# Configuration for the SROIE dataset (English)
+# To train on a different dataset: copy this file and update root_dir + entity_fields
+# (Requires the new dataset to follow the same directory structure: img/box/entities like SROIE)
 # =============================================================
 
 dataset:
   # root_dir: ./data/FR_SROIE
-  # ocr_lang: fr            # ngôn ngữ cho PaddleOCR lúc predict (en / vi / ...)
+  # ocr_lang: fr            # language for PaddleOCR at prediction (en / vi / ...)
 
-  # Mapping: field JSON trong entities/*.txt  ->  tên nhãn BIO sẽ dùng để train
-  # Đổi field/tên nhãn ở đây không cần sửa bất kỳ file .py nào
+  # Mapping: JSON fields in entities/*.txt -> BIO label names used for training
+  # Changing fields/label names here does not require modifying any .py files
   entity_fields:
     - json_key: merchant
       label: MERCHANT
@@ -23,33 +23,8 @@ dataset:
       label: ZIPCODE
 
 model:
-  # architecture: layoutlmv3 -> tokenizer RoBERTa, phù hợp tiếng Anh (SROIE)
-  # architecture: layoutxlm  -> tokenizer XLM-R, phù hợp đa ngôn ngữ/tiếng Việt
+  # architecture: layoutlmv3 -> tokenizer RoBERTa, suitable for English (SROIE)
+  # architecture: layoutxlm  -> tokenizer XLM-R, suitable for multiple languages/French/Vietnamese
   architecture: layoutxlm
   base_checkpoint: microsoft/layoutxlm-base
   max_length: 512
-
-# training:
-#   output_dir: ./outputs/sroie_run1
-
-#   batch_size: 2
-#   eval_batch_size: 2
-#   grad_accum_steps: 8          # effective batch size = batch_size * grad_accum_steps
-
-#   learning_rate: 1e-5
-#   num_epochs: 20
-#   warmup_ratio: 0.1
-#   weight_decay: 0.01
-#   max_grad_norm: 1.0
-
-#   fp16: true
-#   logging_steps: 10
-#   save_total_limit: 2          # chỉ giữ lại N checkpoint gần nhất, tránh đầy ổ đĩa
-#   early_stopping_patience: 5
-
-#   # Bật true nếu thấy F1 = 0 kéo dài nhiều epoch do mất cân bằng nhãn nặng
-#   # (dataset nhiều field, entity chiếm tỷ lệ token rất nhỏ so với "O")
-#   use_class_weights: true
-
-#   dataloader_num_workers: 2
-#   seed: 42

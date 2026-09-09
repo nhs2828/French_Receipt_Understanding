@@ -1,15 +1,15 @@
 # =============================================================
-# Config cho dataset SROIE (tiếng Anh)
-# Muốn train dataset khác: copy file này, đổi root_dir + entity_fields
-# (yêu cầu dataset mới có cùng cấu trúc thư mục img/box/entities như SROIE)
+# Configuration for the SROIE dataset (English)
+# To train on a different dataset: copy this file and update root_dir + entity_fields
+# (Requires the new dataset to follow the same directory structure: img/box/entities like SROIE)
 # =============================================================
 
 dataset:
   root_dir: ./data/SROIE2019
-  ocr_lang: en            # ngôn ngữ cho PaddleOCR lúc predict (en / vi / ...)
+  ocr_lang: en            # language for PaddleOCR at prediction (en / vi / ...)
 
-  # Mapping: field JSON trong entities/*.txt  ->  tên nhãn BIO sẽ dùng để train
-  # Đổi field/tên nhãn ở đây không cần sửa bất kỳ file .py nào
+  # Mapping: JSON fields in entities/*.txt -> BIO label names used for training
+  # Changing fields/label names here does not require modifying any .py files
   entity_fields:
     - json_key: company
       label: COMPANY
@@ -21,8 +21,8 @@ dataset:
       label: TOTAL
 
 model:
-  # architecture: layoutlmv3 -> tokenizer RoBERTa, phù hợp tiếng Anh (SROIE)
-  # architecture: layoutxlm  -> tokenizer XLM-R, phù hợp đa ngôn ngữ/tiếng Việt
+  # architecture: layoutlmv3 -> tokenizer RoBERTa, suitable for English (SROIE)
+  # architecture: layoutxlm  -> tokenizer XLM-R, suitable for multiple languages/French/Vietnamese
   architecture: layoutlmv3
   base_checkpoint: microsoft/layoutlmv3-base
   max_length: 512
@@ -42,11 +42,11 @@ training:
 
   fp16: true
   logging_steps: 10
-  save_total_limit: 2          # chỉ giữ lại N checkpoint gần nhất, tránh đầy ổ đĩa
+  save_total_limit: 2          # only keep the last N checkpoints, to avoid filling up the disk
   early_stopping_patience: 5
 
-  # Bật true nếu thấy F1 = 0 kéo dài nhiều epoch do mất cân bằng nhãn nặng
-  # (dataset nhiều field, entity chiếm tỷ lệ token rất nhỏ so với "O")
+  # Turn on true if you see F1 = 0 for many epochs due to severe label imbalance
+  # (dataset has many fields, entities occupy a very small proportion of tokens compared to "O")
   use_class_weights: false
 
   dataloader_num_workers: 2

@@ -1,19 +1,19 @@
 """
-Generic dataset loader cho KIE (Key Information Extraction).
+Generic dataset loader for KIE (Key Information Extraction).
 
-Yêu cầu cấu trúc thư mục (giống format SROIE):
+Directory structure requirement (matches SROIE format):
 
     root_dir/
         train/
             img/         *.jpg
-            box/         *.txt   (mỗi dòng OCR: x0,y0,x1,y1,x2,y2,x3,y3,text)
-            entities/    *.txt   (JSON phẳng, vd: {"company": "...", "date": "...", ...})
+            box/         *.txt   (each OCR line: x0,y0,x1,y1,x2,y2,x3,y3,text)
+            entities/    *.txt   (flat JSON, e.g.: {"company": "...", "date": "...", ...})
         test/
-            (cấu trúc tương tự)
+            (same structure)
 
-Thêm dataset mới KHÔNG cần sửa file này -- chỉ cần:
-  1. Chuẩn bị data đúng cấu trúc thư mục ở trên
-  2. Khai báo `entity_fields` tương ứng trong file config .yaml (xem configs/sroie.yaml)
+Adding a new dataset DOES NOT require modifying this file -- simply:
+  1. Organize your data following the directory structure above
+  2. Declare the corresponding `entity_fields` in your .yaml config file (see configs/sroie.yaml)
 """
 
 import json
@@ -25,18 +25,18 @@ from datasets import Image as HFImage
 
 
 def parse_box_file(box_path):
-    """Đọc file box OCR. Mỗi dòng: x0,y0,x1,y1,x2,y2,x3,y3,text (4 góc + text).
+    """Read the OCR box file. Each line: x0,y0,x1,y1,x2,y2,x3,y3,text (4 corners + text).
 
-    QUAN TRỌNG: 1 dòng OCR thường chứa NHIỀU từ (vd: "BOOK TA .K (TAMAN DAYA) SDN BHD"
-    là tên công ty nằm trên 1 dòng). Phải tách text của dòng thành từng WORD riêng
-    (mỗi word 1 phần tử trong danh sách trả về) -- nếu coi cả dòng là 1 "word" duy nhất,
-    assign_bio_tags (so khớp entity value theo từng từ đơn) sẽ gần như không bao giờ
-    khớp được với entity nhiều từ (COMPANY, ADDRESS), dù vẫn tình cờ khớp đúng với
-    entity 1 từ (DATE, TOTAL) -- đây từng là nguyên nhân khiến COMPANY/ADDRESS luôn
-    học ra rỗng dù DATE/TOTAL vẫn tốt.
+    IMPORTANT: A single OCR line often contains MULTIPLE words (e.g., "BOOK TA .K (TAMAN DAYA) SDN BHD"
+    is a company name on a single line). You must split the line text into individual WORDS
+    (each word as a separate element in the returned list) -- if the entire line is treated as a single "word",
+    assign_bio_tags (which matches entity values word-by-word) will almost never match
+    multi-word entities (COMPANY, ADDRESS), even though it might accidentally match single-word
+    entities (DATE, TOTAL) -- this was the root cause behind COMPANY/ADDRESS always evaluating to empty
+    while DATE/TOTAL worked fine.
 
-    Các word tách ra từ cùng 1 dòng dùng CHUNG 1 bbox (bbox của cả dòng) -- xấp xỉ
-    hợp lý, không cần ước lượng bbox riêng từng ký tự trong dòng.
+    Words split from the same line SHARE the same line bbox (the bounding box of the whole line) -- a reasonable
+    approximation that avoids estimating individual character bboxes.
     """
     words, boxes = [], []
     with open(box_path, encoding="utf-8", errors="ignore") as f:
@@ -61,24 +61,24 @@ def parse_box_file(box_path):
 
 
 def _split_word(text):
-    """Tách text của 1 dòng OCR thành các word.
+    """Split the text of a single OCR line into individual words.
 
-    Ngoài tách theo khoảng trắng, tách thêm tại dấu ':' đứng ngay sau chữ cái
-    (vd OCR dính liền "DATE:09/02/2018" -> ["DATE", "09/02/2018"]) -- do label
-    và giá trị trên biên lai thường dính liền không có khoảng trắng, trong khi
-    entity annotation (JSON) chỉ ghi giá trị, không có label đi kèm.
+    In addition to splitting by whitespace, also split at the ':' character that follows a letter
+    (e.g., "DATE:09/02/2018" -> ["DATE", "09/02/2018"]) -- because labels and values on the receipt
+    are often concatenated without spaces, while entity annotations (JSON) only contain the values,
+    not the labels.
     """
     import re
     out = []
     for chunk in text.split():
-        # tách "LABEL:value" thành "LABEL" + "value" nếu ':' nằm giữa chữ và số/chữ khác
+        # Split "LABEL:value" into "LABEL" + "value" if ':' is sandwiched between letters and other digits/letters
         sub = re.split(r"(?<=[A-Za-z]):(?=\S)|(?<=\d)(?=[€$£¥₫%])", chunk)
         out.extend(s for s in sub if s)
     return out
 
 
 def normalize_bbox(bbox, width, height):
-    """Normalize bbox pixel thô về thang 0-1000 theo yêu cầu bắt buộc của LayoutLMv3."""
+    """Normalize bbox pixel coordinates to the range 0-1000 as required by LayoutLMv3."""
     return [
         max(0, min(1000, int(1000 * bbox[0] / width))),
         max(0, min(1000, int(1000 * bbox[1] / height))),
@@ -89,10 +89,10 @@ def normalize_bbox(bbox, width, height):
 
 def assign_bio_tags(words, entities, entity_fields, label2id):
     """
-    Gán nhãn BIO cho từng word bằng cách so khớp chuỗi entity value vào chuỗi words.
+    Assign BIO labels to each word by matching entity values against the word sequence.
 
-    entity_fields: list[{"json_key": str, "label": str}] lấy từ config.
-    entities: dict đọc từ file entities/*.txt (JSON phẳng).
+    entity_fields: list[{"json_key": str, "label": str}] taken from the config.
+    entities: dict read from the entities/*.txt files (flat JSON).
     """
     tags = ["O"] * len(words)
     for field in entity_fields:
@@ -111,7 +111,7 @@ def assign_bio_tags(words, entities, entity_fields, label2id):
     return [label2id[t] for t in tags]
 
 
-# Schema cố định, không phụ thuộc số lượng nhãn cụ thể -> dùng chung cho mọi dataset
+# Fixed schema, independent of the specific number of labels -> shared across all datasets
 FEATURES = Features({
     "image": HFImage(),
     "words": Sequence(Value("string")),
