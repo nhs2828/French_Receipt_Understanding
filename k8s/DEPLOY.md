@@ -107,11 +107,17 @@ kubectl apply -f k8s/kie-service/service.yaml
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
+# gpu
+helm repo add gpu-helm-charts https://nvidia.github.io/dcgm-exporter/helm-charts
 helm repo update
 
 helm install monitoring prometheus-community/kube-prometheus-stack \
   -n monitoring --create-namespace \
   -f k8s/monitoring/kube-prometheus-stack-values.yaml
+
+# GPU monitoring
+helm install dcgm-exporter gpu-helm-charts/dcgm-exporter \
+  -n monitoring -f k8s/monitoring/dcgm-exporter-values.yaml
 
 helm install loki grafana/loki-stack \
   -n monitoring \
@@ -128,6 +134,8 @@ depends on it for auto-discovery.
 ### no Helm
 ```bash
 kubectl apply -f k8s/monitoring/grafana-dashboard-configmap.yaml
+# GPU
+kubectl apply -f monitoring/dcgm-dashboard-configmap.yaml 
 kubectl apply -f k8s/vision-service/servicemonitor.yaml
 kubectl apply -f k8s/kie-service/servicemonitor.yaml
 ```
@@ -179,6 +187,15 @@ minikube delete --all
 # debug gpu
 nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits -l 1
 ```
+ - if GPU dashboard isnt up, check the dashboard json file (if take directly from grafana com)
+ ```bash
+ grep -n "DS_PROMETHEUS\|\"datasource\"" k8s/helm/receipt-understanding/dashboards/dcgm-exporter.json | head -20
+ ```
+ if it show a placeholder
+ ```bash
+ sed -i 's/"datasource": "\${DS_PROMETHEUS}"/"datasource": {"type": "prometheus", "uid": null}/g' \
+  k8s/helm/receipt-understanding/dashboards/dcgm-exporter.json
+ ```
 
 ## Misc setup fresh machine (linux/ubuntu)
 For people like me who couldn't remember all the commands
