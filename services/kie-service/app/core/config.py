@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     LOG_JSON: bool = True
     LOG_DIR: str = str(ROOT_DIR / "logs")
     LOG_RETENTION_DAYS: int = 3
+    # --- Tracing ---
+    JAEGER_OTLP_ENDPOINT: str = "http://localhost:4317"
 
     class Config:
         env_prefix = "KIE_"   # reads APP_SERVICE_NAME, APP_MAX_UPLOAD_SIZE_MB

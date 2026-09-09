@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vision-service
+  name: {{ .Values.vision.name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: vision-service
+    app: {{ .Values.vision.name }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vision-service
+      app: {{ .Values.vision.name }}
   template:
     metadata:
       labels:
-        app: vision-service
+        app: {{ .Values.vision.name }}
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
@@ -59,7 +59,7 @@ spec:
               mountPath: /models
       {{- end }}
       containers:
-        - name: vision-service
+        - name: {{ .Values.vision.name }}
           image: "{{ .Values.vision.image.repository }}:{{ .Values.vision.image.tag }}"
           imagePullPolicy: {{ .Values.vision.image.pullPolicy }}
           ports:

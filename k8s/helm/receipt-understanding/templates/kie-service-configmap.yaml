@@ -5,7 +5,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   # <service>.<namespace>.svc.cluster.local is k8s's internal DNS.
-  KIE_VISION_SERVICE_URL: "http://vision-service.{{ .Release.Namespace }}.svc.cluster.local:8000/api/v1/extract"
+  KIE_VISION_SERVICE_URL: "http://{{ .Values.vision.name }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.vision.service.port }}/api/v1/extract"
+  KIE_JAEGER_OTLP_ENDPOINT: "http://jaeger.monitoring.svc.cluster.local:4317"
 {{- if eq .Values.kie.deployMode "cloud" }}
   S3_BUCKET: {{ .Values.kie.s3.bucket | quote }}
   S3_MODEL_PREFIX: {{ .Values.kie.s3.modelPrefix | quote }}

@@ -7,6 +7,7 @@ from fastapi import UploadFile, HTTPException
 from fastapi import APIRouter, UploadFile, Depends, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from opentelemetry import trace
 
 from app.dependencies import get_text_extraction_service, get_segmentation_service, get_inference_executor
 from app.utils import run_with_context
@@ -43,6 +44,7 @@ def run_pipeline(
     filename: str,
     request_id: str,
 ) -> VisionResponse:
+    tracer = trace.get_tracer(__name__)
     total_start = time.perf_counter()
     np_arr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -52,7 +54,8 @@ def run_pipeline(
     # Step 1: Segmentation
     IMAGE_SIZE_BYTES.observe(len(image_bytes))
     t0 = time.perf_counter()
-    data = segmentation_service.run(img, params=segmentation_params, debug=False)
+    with tracer.start_as_current_span("segmentation"):
+        data = segmentation_service.run(img, params=segmentation_params, debug=False)
     segmentation_ms = round((time.perf_counter() - t0) * 1000, 2)
     PIPELINE_STAGE_DURATION.labels(stage="segmentation").observe(segmentation_ms / 1000)
     logger.info(f"Segmentation OK: {segmentation_ms}ms")
@@ -62,33 +65,34 @@ def run_pipeline(
 
     # Step 2: Crop & OCR Loop
     t_ocr_start = time.perf_counter()
-    for i, poly in enumerate(data.mask_polygons):
-        img_with_black_bg = ProcessingService.apply_black_background(orig_img, poly)
-        cropped_result = ProcessingService.rotate_and_crop(img_with_black_bg, poly)
-        cropped_result.image = ProcessingService.add_white_padding(cropped_result.image, padding_px=70)
+    with tracer.start_as_current_span("ocr_loop"):
+        for i, poly in enumerate(data.mask_polygons):
+            img_with_black_bg = ProcessingService.apply_black_background(orig_img, poly)
+            cropped_result = ProcessingService.rotate_and_crop(img_with_black_bg, poly)
+            cropped_result.image = ProcessingService.add_white_padding(cropped_result.image, padding_px=70)
 
-        ocr_raw = text_extraction_service.run(image=cropped_result.image)
-        words, boxes = ProcessingService.process_text_extraction_results(
-            img=cropped_result.image,
-            result=ocr_raw,
-            data_prep=False,
-            y_tolerance=6,
-            x_gap_max=35,
-        )
-
-        img_preprocessed = ocr_raw['doc_preprocessor_res']['output_img']
-        h, w = img_preprocessed.shape[:2]
-
-        results.append(
-            ReceiptResult(
-                instance_id=i,
-                words=words,
-                boxes=boxes,
-                width=w,
-                height=h,
-                processed_image_b64=_encode_image_b64(img_preprocessed),
+            ocr_raw = text_extraction_service.run(image=cropped_result.image)
+            words, boxes = ProcessingService.process_text_extraction_results(
+                img=cropped_result.image,
+                result=ocr_raw,
+                data_prep=False,
+                y_tolerance=6,
+                x_gap_max=35,
             )
-        )
+
+            img_preprocessed = ocr_raw['doc_preprocessor_res']['output_img']
+            h, w = img_preprocessed.shape[:2]
+
+            results.append(
+                ReceiptResult(
+                    instance_id=i,
+                    words=words,
+                    boxes=boxes,
+                    width=w,
+                    height=h,
+                    processed_image_b64=_encode_image_b64(img_preprocessed),
+                )
+            )
 
     ocr_ms = round((time.perf_counter() - t_ocr_start) * 1000, 2)
     PIPELINE_STAGE_DURATION.labels(stage="ocr").observe(ocr_ms / 1000)

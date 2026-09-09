@@ -5,9 +5,11 @@
 # cpu
 minikube start --driver=docker --cpus=4 --memory=8192
 # gpu
-# some needs --container-runtime=docker
-minikube start --driver=docker --cpus=4 --memory=8192 --gpus=all
+# nested VM sometimes needs --container-runtime=docker
+minikube start --driver=docker --container-runtime=docker --cpus=4 --memory=8192 --gpus=all
 minikube addons enable nvidia-device-plugin
+# check
+minikube ssh -- nvidia-smi
 ```
 Increase `--memory` if the vision-service pod OOMKills — PaddleOCR + YOLO-seg are heavy.
 
@@ -28,13 +30,24 @@ docker run --rm -it --network=host alpine ash -c \
 ## Replace with Dockefile_cpu if want to run with cpu
 From the repo root:
 ```bash
-docker build -t nhs2828/vision-service-cpu:v1.0 \
+# add --platform linux/amd64 for linux/ubuntu
+# CPU
+docker build --platform linux/amd64 -t nhs2828/vision-service-cpu:v1.1 \
   -f services/vision-service/Dockerfile_cpu services/vision-service
-docker push nhs2828/vision-service-cpu:latest
+docker push nhs2828/vision-service-cpu:v1.1
 
-docker build -t nhs2828/kie-service-cpu:v1.0 \
+docker build --platform linux/amd64 -t nhs2828/kie-service-cpu:v1.1 \
   -f services/kie-service/Dockerfile_cpu .
-docker push custom_name_here/kie-service:latest
+docker push nhs2828/kie-service-cpuv1.1
+
+# GPU
+docker build --platform linux/amd64 -t nhs2828/vision-service-gpu:v1.1 \
+  -f services/vision-service/Dockerfile services/vision-service
+docker push nhs2828/vision-service-gpu:v1.1
+
+docker build --platform linux/amd64 -t nhs2828/kie-service-gpu:v1.1 \
+  -f services/kie-service/Dockerfile .
+docker push nhs2828/kie-service-gpu:v1.1
 ```
 Re-run these two `build` + `push` pairs any time we change code
 
@@ -69,6 +82,7 @@ Skip this if use Helm to deploy
 ### local test
 ```bash
 kubectl apply -f k8s/00-namespace.yaml
+kubectl apply -f k8s/monitoring/jaeger.yaml
 kubectl apply -f k8s/vision-service/configmap.yaml
 kubectl apply -f k8s/vision-service/deployment.yaml
 kubectl apply -f k8s/vision-service/service.yaml
@@ -79,6 +93,7 @@ kubectl apply -f k8s/kie-service/service.yaml
 ### Cloud aws
 ```bash
 kubectl apply -f k8s/00-namespace.yaml
+kubectl apply -f k8s/monitoring/jaeger.yaml
 kubectl apply -f k8s/vision-service/configmap_cloud.yaml
 kubectl apply -f k8s/vision-service/deployment_cloud.yaml
 kubectl apply -f k8s/vision-service/service.yaml
@@ -91,6 +106,7 @@ kubectl apply -f k8s/kie-service/service.yaml
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
 helm repo update
 
 helm install monitoring prometheus-community/kube-prometheus-stack \
@@ -100,6 +116,10 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
 helm install loki grafana/loki-stack \
   -n monitoring \
   -f k8s/monitoring/loki-stack-values.yaml
+
+helm install jaeger jaegertracing/jaeger \
+  -n monitoring \
+  -f k8s/monitoring/jaeger-values.yaml
 ```
 The release name **must** be `monitoring` — the ServiceMonitors' `release: monitoring` label
 depends on it for auto-discovery.
@@ -137,6 +157,9 @@ kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
 
 # Prometheus, for raw queries
 kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
+
+# jaeger for tracing
+kubectl port-forward -n monitoring svc/jaeger 16686:16686
 ```
 ## 7.Shutdown
 ```bash
@@ -152,12 +175,18 @@ minikube delete --all
 - kubectl logs <pod> -n receipt-understanding to check pod logs
 - kubectl describe <pod> -n receipt-understanding to check startup
 
+```bash
+# debug gpu
+nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits -l 1
+```
+
 ## Misc setup fresh machine (linux/ubuntu)
 For people like me who couldn't remember all the commands
 ### AWS CLI
 ```bash
 curl -fsSL https://awscli.amazonaws.com/v2/install.sh | bash
 export PATH=$PATH:/root/.local/bin
+aws configure
 ```
 
 ### Install minikube

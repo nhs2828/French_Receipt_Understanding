@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kie-service
+  name: {{ .Values.kie.name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: kie-service
+    app: {{ .Values.kie.name }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kie-service
+      app: {{ .Values.kie.name }}
   template:
     metadata:
       labels:
-        app: kie-service
+        app: {{ .Values.kie.name }}
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8000"
@@ -59,7 +59,7 @@ spec:
               mountPath: /models
       {{- end }}
       containers:
-        - name: kie-service
+        - name: {{ .Values.kie.name }}
           image: "{{ .Values.kie.image.repository }}:{{ .Values.kie.image.tag }}"
           imagePullPolicy: {{ .Values.kie.image.pullPolicy }}
           ports:

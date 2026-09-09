@@ -17,6 +17,7 @@ from vision_client import VisionClient
 from app.core.config import get_settings
 from app.core.logging import setup_logging, get_logger
 from app.core.metrics import MODEL_LOADED
+from app.core.tracing import setup_tracing
 from app.services import KIEService
 from app.api.v1.routers import api_router
 from app.middleware.request_tracing import RequestTracingMiddleware
@@ -107,7 +108,7 @@ def create_app() -> FastAPI:
 
     # --- Metrics ---
     Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
-
+    setup_tracing(app)
     return app
 
 

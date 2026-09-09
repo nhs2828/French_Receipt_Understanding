@@ -22,6 +22,7 @@ from app.middleware.error_handler import register_exception_handlers
 from app.core.config import settings
 from app.core.metrics import MODEL_LOADED
 from app.core.logging import setup_logging, get_logger
+from app.core.tracing import setup_tracing
 
 
 setup_logging()
@@ -100,7 +101,7 @@ def create_app() -> FastAPI:
 
     # --- Metrics ---
     Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
-
+    setup_tracing(app)
     return app
 
 

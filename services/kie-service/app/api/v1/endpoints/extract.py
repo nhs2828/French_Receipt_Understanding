@@ -10,6 +10,8 @@ from fastapi import APIRouter, UploadFile, Depends, Query, Request
 # from fastapi.concurrency import run_in_threadpool
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from opentelemetry import trace
+
 from vision_client import VisionClient
 from vision_client import ReceiptResult
 
@@ -25,6 +27,7 @@ from app.core.metrics import (
 )
 
 router = APIRouter()
+tracer = trace.get_tracer(__name__)
 limiter = Limiter(key_func=get_remote_address)
 logger = get_logger(__name__)
 
@@ -94,11 +97,13 @@ async def extract(
             raise HTTPException(400, "empty image upload")
 
         try:
-            vision_result = await vision_client.process(
-                request_id=request_id_ctx.get(),
-                image_bytes=image_bytes,
-                filename=image.filename or "image.jpg"
-            )
+            with tracer.start_as_current_span("vision_call") as span:
+                vision_result = await vision_client.process(
+                    request_id=request_id_ctx.get(),
+                    image_bytes=image_bytes,
+                    filename=image.filename or "image.jpg"
+                )
+                span.set_attribute("num_instances", vision_result.num_instances)
         except httpx.TimeoutException:
             PIPELINE_ERRORS.labels(error_code="time_out", stage="ocr").inc()
             raise HTTPException(504, "vision-service timed out")
@@ -115,13 +120,15 @@ async def extract(
         # inference limiter (not the global anyio default thread limiter).
         # anyio.to_thread.run_sync limiter=request.app.state.inference_limiter
         try:
-            kie_results = await run_with_context(
-                    loop,
-                    executor,
-                    run_kie_on_all_instances,
-                    kie_service,
-                    vision_result.results
-            )
+            with tracer.start_as_current_span("kie_inference") as span:
+                span.set_attribute("num_instances", len(vision_result.results))
+                kie_results = await run_with_context(
+                        loop,
+                        executor,
+                        run_kie_on_all_instances,
+                        kie_service,
+                        vision_result.results
+                )
 
             # kie_results = await run_in_threadpool(
             #     run_kie_on_all_instances,

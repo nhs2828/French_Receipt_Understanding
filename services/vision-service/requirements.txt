@@ -17,3 +17,8 @@ pydantic-settings
 # Monitoring & Metrics
 prometheus-client
 prometheus-fastapi-instrumentator
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-httpx
+opentelemetry-exporter-otlp-proto-grpc
