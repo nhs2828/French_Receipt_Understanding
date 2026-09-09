@@ -1,0 +1,11 @@
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 15s
+  additionalLabels:
+    release: monitoring
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule

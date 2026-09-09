@@ -1,0 +1,14 @@
+# add the dashboard when at least 1 service has enabled the gpu
+{{- if and .Values.monitoring.dashboard.enabled (or .Values.vision.gpu.enabled .Values.kie.gpu.enabled) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dcgm-exporter-dashboard
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    grafana_dashboard: "1"
+data:
+  dcgm-exporter.json: |
+{{ .Files.Get "dashboards/dcgm-exporter.json" | indent 4 }}
+{{- end }}
+# get dcgm-exporter.json from https://grafana.com/grafana/dashboards/12239-nvidia-dcgm-exporter-dashboard/
