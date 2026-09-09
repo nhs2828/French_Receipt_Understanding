@@ -5,9 +5,11 @@
 # cpu
 minikube start --driver=docker --cpus=4 --memory=8192
 # gpu
-# some needs --container-runtime=docker
-minikube start --driver=docker --cpus=4 --memory=8192 --gpus=all
+# nested VM sometimes needs --container-runtime=docker
+minikube start --driver=docker --container-runtime=docker --cpus=4 --memory=8192 --gpus=all
 minikube addons enable nvidia-device-plugin
+# check
+minikube ssh -- nvidia-smi
 ```
 Increase `--memory` if the vision-service pod OOMKills — PaddleOCR + YOLO-seg are heavy.
 
@@ -155,6 +157,9 @@ kubectl port-forward -n monitoring svc/monitoring-grafana 3000:80
 
 # Prometheus, for raw queries
 kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus 9090:9090
+
+# jaeger for tracing
+kubectl port-forward -n monitoring svc/jaeger 16686:16686
 ```
 ## 7.Shutdown
 ```bash
@@ -170,12 +175,18 @@ minikube delete --all
 - kubectl logs <pod> -n receipt-understanding to check pod logs
 - kubectl describe <pod> -n receipt-understanding to check startup
 
+```bash
+# debug gpu
+nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits -l 1
+```
+
 ## Misc setup fresh machine (linux/ubuntu)
 For people like me who couldn't remember all the commands
 ### AWS CLI
 ```bash
 curl -fsSL https://awscli.amazonaws.com/v2/install.sh | bash
 export PATH=$PATH:/root/.local/bin
+aws configure
 ```
 
 ### Install minikube

@@ -5,7 +5,7 @@ vision:
   name: vision-service
   image:
     repository: nhs2828/vision-service-gpu
-    tag: v1.0
+    tag: v1.1
     pullPolicy: Always
   service:
     type: ClusterIP   # internal only — kie-service is the only caller
@@ -42,7 +42,7 @@ kie:
   name: kie-service
   image:
     repository: nhs2828/kie-service-cpu
-    tag: v1.0
+    tag: v1.1
     pullPolicy: Always
   service:
     type: NodePort   # front door
