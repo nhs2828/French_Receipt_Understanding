@@ -5,6 +5,7 @@
 # cpu
 minikube start --driver=docker --cpus=4 --memory=8192
 # gpu
+# some needs --container-runtime=docker
 minikube start --driver=docker --cpus=4 --memory=8192 --gpus=all
 minikube addons enable nvidia-device-plugin
 ```
@@ -169,7 +170,7 @@ rm minikube-linux-amd64
 ### Install NVIDIA toolkit for nvidia gpu
 ```bash
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \ sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \ tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 apt update
 apt install -y nvidia-container-toolkit
 ```
@@ -184,4 +185,12 @@ rm kubectl
 ### Helm
 ```bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+### Sometimes Docker does not have the NVIDIA Container Runtime configured as its default container engine
+
+```bash
+#docker: Error response from daemon: could not select device driver "" with capabilities: [[gpu]]
+nvidia-ctk runtime configure --runtime=docker
+systemctl restart docker
 ```
