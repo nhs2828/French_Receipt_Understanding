@@ -2,6 +2,7 @@
 # Override any of these with: helm install ... -f values-cloud-gpu.yaml
 
 vision:
+  name: vision-service
   image:
     repository: nhs2828/vision-service-gpu
     tag: v1.0
@@ -38,6 +39,7 @@ vision:
   nodeSelector: {}
 
 kie:
+  name: kie-service
   image:
     repository: nhs2828/kie-service-cpu
     tag: v1.0
