@@ -3,7 +3,7 @@
 An end-to-end, scalable pipeline for extracting key information from French receipt images and scanned documents — built as a set of microservices deployed on Kubernetes, with vision-based document parsing and key information extraction (KIE) models behind a single API.
 
 Architecture diagram
-![Architecture](docs/OCR_arch.png)
+![Architecture](docs/OCR_arch_v2.png)
 
 ## Overview
 
@@ -14,14 +14,18 @@ Given a photo of a French receipt, the pipeline localizes the receipt, extracts 
 ![showcase](docs/image_5.jpg)
 ![showcase](docs/showcase_5.png)
 ### Monnitor with Grafana
-Pipeline performance
-![monitor](docs/Pipeline_perf.png)
+Pipeline performance with RTX 3060
+![monitor](docs/Pipeline_perf_GPU.png)
 Errors tracking
 ![monitor](docs/error.png)
 Infrastructure monitoring
 ![monitor](docs/inf_usage.png)
+GPU monitoring
+![monitor](docs/monitor_GPU.png)
 Log Tracing
 ![monitor](docs/log_tracing.png)
+Jeager profiling Tracing
+![monitor](docs/jeager_tracing.png)
 ## Flow
 
 ```
@@ -63,6 +67,7 @@ Logs are shipped to **Loki**, metrics are scraped by **Prometheus**, and both ar
 **Observability**
 - **Metrics:** Prometheus
 - **Logs:** Loki
+- **Tracing:** Jaeger
 - **Dashboards & alerting:** Grafana
 
 ## Machine Learning
@@ -127,5 +132,8 @@ Once deployed, Grafana dashboards provide:
 - Error rates by stage
 - Per-pod CPU and memory usage
 - Log search and correlation via Loki
+- Per GPU information (usage, temperature, ect..)
+
+Jeager UI provide tracing to check per request latency
 
 See [`k8s/monitoring/`](k8s/monitoring) for the Helm values used to deploy the `kube-prometheus-stack` and `loki-stack`.
