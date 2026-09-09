@@ -1,0 +1,16 @@
+# k8s/monitoring/jaeger-values.yaml
+allInOne:
+  enabled: true
+  extraEnv:
+    - name: COLLECTOR_OTLP_ENABLED
+      value: "true"
+
+storage:
+  type: memory   # traces lost on pod restart
+
+agent:
+  enabled: false
+collector:
+  enabled: false
+query:
+  enabled: false

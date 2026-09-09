@@ -11,6 +11,7 @@ services:
     environment:
       - PADDLEOCR_DEVICE=cpu
       - SEG_DEVICE=cpu
+      - VISION_JAEGER_OTLP_ENDPOINT=http://jaeger:4317
     volumes:
       # bind-mount local weights for now — replace with init-container + S3
       # pull once this moves to k8s
@@ -21,6 +22,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 40s
+    depends_on:
+      - jaeger
     networks:
       - ocr-network
 
@@ -33,6 +36,7 @@ services:
     environment:
       # - MODEL_DIR=/app/models
       - KIE_VISION_SERVICE_URL=http://vision-service:8000/api/v1/extract
+      - KIE_JAEGER_OTLP_ENDPOINT=http://jaeger:4317
     volumes:
       - ./services/kie-service/models:/app/models:ro
     networks:
@@ -40,6 +44,8 @@ services:
     depends_on:
       vision-service:
         condition: service_healthy
+      jaeger:
+        condition: service_started
 
   prometheus:
     image: prom/prometheus:latest
@@ -51,6 +57,17 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    networks:
+      - ocr-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OpenTelemetry Protocol gRPC receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     restart: unless-stopped
     networks:
       - ocr-network

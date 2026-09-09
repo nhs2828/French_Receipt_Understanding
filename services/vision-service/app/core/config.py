@@ -90,6 +90,9 @@ class Settings(BaseSettings):
     LOG_DIR: str = str(ROOT_DIR / "logs")
     LOG_RETENTION_DAYS: int = 3
 
+    # --- Tracing ---
+    JAEGER_OTLP_ENDPOINT: str = "http://localhost:4317"
+
     class Config:
         env_prefix = "VISION_"   # reads VISION_<ENV>
         env_file = ".env"

@@ -28,13 +28,24 @@ docker run --rm -it --network=host alpine ash -c \
 ## Replace with Dockefile_cpu if want to run with cpu
 From the repo root:
 ```bash
-docker build -t nhs2828/vision-service-cpu:v1.0 \
+# add --platform linux/amd64 for linux/ubuntu
+# CPU
+docker build --platform linux/amd64 -t nhs2828/vision-service-cpu:v1.1 \
   -f services/vision-service/Dockerfile_cpu services/vision-service
-docker push nhs2828/vision-service-cpu:latest
+docker push nhs2828/vision-service-cpu:v1.1
 
-docker build -t nhs2828/kie-service-cpu:v1.0 \
+docker build --platform linux/amd64 -t nhs2828/kie-service-cpu:v1.1 \
   -f services/kie-service/Dockerfile_cpu .
-docker push custom_name_here/kie-service:latest
+docker push nhs2828/kie-service-cpuv1.1
+
+# GPU
+docker build --platform linux/amd64 -t nhs2828/vision-service-gpu:v1.1 \
+  -f services/vision-service/Dockerfile services/vision-service
+docker push nhs2828/vision-service-gpu:v1.1
+
+docker build --platform linux/amd64 -t nhs2828/kie-service-gpu:v1.1 \
+  -f services/kie-service/Dockerfile .
+docker push nhs2828/kie-service-gpu:v1.1
 ```
 Re-run these two `build` + `push` pairs any time we change code
 
@@ -69,6 +80,7 @@ Skip this if use Helm to deploy
 ### local test
 ```bash
 kubectl apply -f k8s/00-namespace.yaml
+kubectl apply -f k8s/monitoring/jaeger.yaml
 kubectl apply -f k8s/vision-service/configmap.yaml
 kubectl apply -f k8s/vision-service/deployment.yaml
 kubectl apply -f k8s/vision-service/service.yaml
@@ -79,6 +91,7 @@ kubectl apply -f k8s/kie-service/service.yaml
 ### Cloud aws
 ```bash
 kubectl apply -f k8s/00-namespace.yaml
+kubectl apply -f k8s/monitoring/jaeger.yaml
 kubectl apply -f k8s/vision-service/configmap_cloud.yaml
 kubectl apply -f k8s/vision-service/deployment_cloud.yaml
 kubectl apply -f k8s/vision-service/service.yaml
@@ -91,6 +104,7 @@ kubectl apply -f k8s/kie-service/service.yaml
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
 helm repo update
 
 helm install monitoring prometheus-community/kube-prometheus-stack \
@@ -100,6 +114,10 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
 helm install loki grafana/loki-stack \
   -n monitoring \
   -f k8s/monitoring/loki-stack-values.yaml
+
+helm install jaeger jaegertracing/jaeger \
+  -n monitoring \
+  -f k8s/monitoring/jaeger-values.yaml
 ```
 The release name **must** be `monitoring` — the ServiceMonitors' `release: monitoring` label
 depends on it for auto-discovery.

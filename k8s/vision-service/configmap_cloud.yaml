@@ -4,6 +4,7 @@ metadata:
   name: vision-service-config
   namespace: receipt-understanding
 data:
+  VISION_JAEGER_OTLP_ENDPOINT: "http://jaeger.monitoring.svc.cluster.local:4317"
   S3_BUCKET: "amz-s3-receipt-understanding-423051206837-eu-west-3-an"
   S3_MODEL_PREFIX: "models/vision/"
   AWS_REGION: "eu-west-3"

@@ -4,6 +4,6 @@ metadata:
   name: vision-service-config
   namespace: receipt-understanding
 data:
-  # Nothing needed yet — Settings() defaults cover local/demo use.
+  VISION_JAEGER_OTLP_ENDPOINT: "http://jaeger.monitoring.svc.cluster.local:4317"
   # Future: MODEL_S3_BUCKET / MODEL_S3_PREFIX for an init-container download step.
   PLACEHOLDER: "true"

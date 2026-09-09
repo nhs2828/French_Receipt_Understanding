@@ -13,5 +13,10 @@ torch==2.13.0
 torchvision==0.28.0
 pillow==12.3.0
 sentencepiece==0.2.2
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-httpx
+opentelemetry-exporter-otlp-proto-grpc
 prometheus-client
 prometheus-fastapi-instrumentator

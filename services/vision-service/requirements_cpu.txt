@@ -15,5 +15,10 @@ paddlepaddle==3.2.0
 paddleocr
 onnx
 onnxruntime
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-httpx
+opentelemetry-exporter-otlp-proto-grpc
 prometheus-client
 prometheus-fastapi-instrumentator

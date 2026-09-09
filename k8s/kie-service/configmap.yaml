@@ -7,4 +7,5 @@ data:
   # <service>.<namespace>.svc.cluster.local is k8s's internal DNS — this replaces
   # the docker-compose "http://vision-service:8000/..." address.
   KIE_VISION_SERVICE_URL: "http://vision-service.receipt-understanding.svc.cluster.local:8000/api/v1/extract"
+  KIE_JAEGER_OTLP_ENDPOINT: "http://jaeger.monitoring.svc.cluster.local:4317"
   # Future: MODEL_S3_BUCKET / MODEL_S3_PREFIX for an init-container download step.
