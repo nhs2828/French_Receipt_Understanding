@@ -50,7 +50,8 @@ User → image upload → API endpoint → KIE service
 4. The vision output (text + layout) is returned to the **KIE service**, which runs **LayoutXLM** to extract structured key-value fields.
 5. The structured result is returned to the user.
 
-Logs are shipped to **Loki**, metrics are scraped by **Prometheus**, and both are visualized and queried through **Grafana** dashboards for monitoring and alerting.
+
+Logs are shipped to **Loki** and metrics are scraped by **Prometheus**, both of which are visualized and queried through **Grafana** for monitoring and alerting. Distributed traces are captured by **Jaeger** and analyzed using the dedicated Jaeger UI for low-latency request tracking and span inspection.
 
 ## Technology
 
