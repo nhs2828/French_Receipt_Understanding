@@ -3,7 +3,7 @@
 
 vision:
   image:
-    repository: nhs2828/vision-service-cpu
+    repository: nhs2828/vision-service-gpu
     tag: v1.0
     pullPolicy: Always
   service:
@@ -12,6 +12,8 @@ vision:
   deployMode: local    # "local" (hostPath) or "cloud" (S3 initContainer)
   models:
     hostPath: /mnt/host-models/vision   # used only when deployMode: local
+  engine:
+    paddle_ocr: "paddle"
   s3:                                    # used only when deployMode: cloud
     bucket: "amz-s3-receipt-understanding-423051206837-eu-west-3-an"
     modelPrefix: "models/vision/"

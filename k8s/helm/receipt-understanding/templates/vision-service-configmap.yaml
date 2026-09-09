@@ -4,6 +4,7 @@ metadata:
   name: vision-service-config
   namespace: {{ .Release.Namespace }}
 data:
+  PADDLEOCR_ENGINE: {{ default "paddle" .Values.vision.engine.paddle_ocr | quote }}
 {{- if eq .Values.vision.deployMode "cloud" }}
   S3_BUCKET: {{ .Values.vision.s3.bucket | quote }}
   S3_MODEL_PREFIX: {{ .Values.vision.s3.modelPrefix | quote }}
