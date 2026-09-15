@@ -20,8 +20,6 @@ services:
               count: 1
               capabilities: [gpu]
     volumes:
-      # bind-mount local weights for now — replace with init-container + S3
-      # pull once this moves to k8s
       - ./services/vision-service/models:/app/models:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/docs').raise_for_status()"]
@@ -95,7 +93,7 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_AUTH_ANONYMOUS_ENABLED=true       # convenient for local testing only, remove for real deployments
+      - GF_AUTH_ANONYMOUS_ENABLED=true       # local testing only
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     restart: unless-stopped
     networks:
@@ -146,7 +144,7 @@ services:
     restart: unless-stopped
     networks:
       - ocr-network
-    # cAdvisor container mounts don't work on Docker Desktop for Mac (no real /sys, /var/lib/docker) —
+    # cAdvisor container mounts don't work on Docker Desktop for Mac —
     # On macOS, container CPU/mem panels will be empty locally
 
 networks:
