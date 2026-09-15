@@ -13,19 +13,6 @@ minikube ssh -- nvidia-smi
 ```
 Increase `--memory` if the vision-service pod OOMKills — PaddleOCR + YOLO-seg are heavy.
 
-<!-- ## Optional
-## 1. Enable the in-cluster registry
-```bash
-minikube addons enable registry
-```
-
-In a **separate terminal, left running**, (macOS/docker driver needs
-this because the VM's network isn't directly reachable from the host):
-```bash
-docker run --rm -it --network=host alpine ash -c \
-  "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000"
-``` -->
-
 ## 1. Build and push both images
 ## Replace with Dockefile_cpu if want to run with cpu
 From the repo root:
@@ -49,7 +36,6 @@ docker build --platform linux/amd64 -t nhs2828/kie-service-gpu:v1.1 \
   -f services/kie-service/Dockerfile .
 docker push nhs2828/kie-service-gpu:v1.1
 ```
-Re-run these two `build` + `push` pairs any time we change code
 
 ## 2. Mount local model weights into minikube
 ### Local model test
@@ -59,7 +45,7 @@ minikube mount ./services/vision-service/models:/mnt/host-models/vision
 minikube mount ./services/kie-service/models:/mnt/host-models/kie
 ```
 
-### Cloud - Create the S3 credentials secret and configure your bucket
+### Cloud - Create the S3 credentials secret and configure bucket
 
 ```bash
 kubectl create namespace receipt-understanding --dry-run=client -o yaml | kubectl apply -f -
@@ -68,14 +54,8 @@ kubectl create secret generic s3-model-creds \
   --from-literal=AWS_ACCESS_KEY_ID=<your-key-id> \
   --from-literal=AWS_SECRET_ACCESS_KEY=<your-secret-key>
 ```
-Then edit k8s/vision-service/configmap.yaml and k8s/kie-service/configmap.yaml
- — replace S3_BUCKET, S3_MODEL_PREFIX, and AWS_REGION with your real bucket details. 
  Each Deployment's pull-models init container downloads the weights fresh into 
  an emptyDir on every pod start — no more minikube mount, no host filesystem dependency.
-
-Startup will take longer now — model download time gets added on top of model load time. 
-The readiness probes already account for this with generous initialDelaySeconds/failureThreshold, 
-but watch kubectl logs -n receipt-understanding <pod> -c pull-models if a pod seems stuck.
 
 ## 3. Deploy the services
 Skip this if use Helm to deploy
