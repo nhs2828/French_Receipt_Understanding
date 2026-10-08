@@ -15,7 +15,7 @@ services/vision-service/models/segmentation/
 services/vision-service/models/recognition/
 services/vision-service/output_data_prep/
 services/kie-service/models/
-services/llm-serve-service/model/
+services/vllm-serve-service/model/
 # training data
 training/KIE/LayoutLM/data/
 training/KIE/LayoutLM/outputs/

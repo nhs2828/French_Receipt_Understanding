@@ -42,7 +42,7 @@ class PaddleOCRParams(BaseSettings):
     # Runtime
     #use_onnx: bool = True
     #use_gpu: bool = True
-    engine: str = "onnxruntime" # paddle_static onnxruntime, still have confict with onnx with yolo paddle ..
+    engine: str = "paddle" # paddle_static onnxruntime, still have confict with onnx with yolo paddle ..
     # # Device
     device: str = "gpu"  # "cpu" or "gpu"
 

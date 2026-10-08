@@ -1,0 +1,179 @@
+services:
+  vision-service:
+    #platform: linux/amd64   # PaddlePaddle segfaults on linux/arm64 — force x86 + Rosetta emulation
+    build:
+      context: ./services/vision-service
+      dockerfile: Dockerfile
+      # platforms:
+      #   - linux/amd64
+    ports:
+      - "8000:8000"
+    environment:
+      - PADDLEOCR_DEVICE=gpu
+      - SEG_DEVICE=cuda:0
+      - VISION_JAEGER_OTLP_ENDPOINT=http://jaeger:4317
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ./services/vision-service/models:/app/models:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/docs').raise_for_status()"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    depends_on:
+      jaeger:
+        condition: service_started
+      vllm-service:
+        condition: service_healthy
+    networks:
+      - ocr-network
+
+  vllm-service:
+    build:
+      context: ./services/vllm-serve-service
+      dockerfile: Dockerfile
+    environment:
+      - MODEL_DIR=/app/models/qwen2.5-7b-awq
+    volumes:
+      - ./services/vllm-serve-service/models:/app/models:ro
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+    networks:
+      - ocr-network
+
+
+  llm-service:
+    build:
+      context: .                                     # repo root — needs libs/vision_client
+      dockerfile: services/llm-service/Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      # - MODEL_DIR=/app/models
+      - LLM_VISION_SERVICE_URL=http://vision-service:8000/api/v1/extract
+      - LLM_VLLM_SERVE_URL=http://vllm-service:8000/v1
+      - LLM_JAEGER_OTLP_ENDPOINT=http://jaeger:4317
+    networks:
+      - ocr-network
+    depends_on:
+      vision-service:
+        condition: service_healthy
+      vllm-service:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    networks:
+      - ocr-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OpenTelemetry Protocol gRPC receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+    networks:
+      - ocr-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_AUTH_ANONYMOUS_ENABLED=true       # local testing only
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    restart: unless-stopped
+    networks:
+      - ocr-network
+    depends_on:
+      - prometheus
+
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - ocr-network
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - ocr-network
+    depends_on:
+      - loki
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    container_name: cadvisor
+    #image: gcr.io/cadvisor/cadvisor:v0.49.1
+    ports:
+      - "8080:8080"
+    privileged: true
+    command:
+      - "--housekeeping_interval=15s"
+      - "--docker_only=true"
+      - "--store_container_labels=false"
+      - "--disable_metrics=disk" # workaround for #3860
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+    networks:
+      - ocr-network
+    # cAdvisor container mounts don't work on Docker Desktop for Mac —
+    # On macOS, container CPU/mem panels will be empty locally
+
+networks:
+  ocr-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
